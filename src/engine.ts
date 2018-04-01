@@ -3,10 +3,11 @@ export class Engine {
   private height = window.innerHeight
 
   // Physics parameters.
-  private K = 0.005; // "Hooke's constant"
+  private K = 0.01 // "Hooke's constant"
+  private D = 0.025 // Dampening Factor
 
-  private readonly ROWS = 20
-  private readonly COLUMNS = 20
+  private readonly ROWS = 50
+  private readonly COLUMNS = 50
   private readonly PLANE_WIDTH = 100
   private readonly PLANE_HEIGHT = 100
   private readonly CELL_HEIGHT = this.PLANE_HEIGHT / this.ROWS
@@ -76,11 +77,13 @@ export class Engine {
       const rowHeight = heightMap[i]
       const rowVelocity = velocityMap[i]
       for(let j = 0 ; j < rowHeight.length; j++) {
+        const velocity = rowVelocity[j] 
+        rowHeight[j] += velocity
+
         const targetHeight = 0
         const height = rowHeight[j]
         const x = height - targetHeight
-        const acceleration = -1 * this.K * x
-        rowHeight[j] += rowVelocity[j]
+        const acceleration = (-1 * this.K * x) - ( this.D * velocity)
         rowVelocity[j] += acceleration
 
         const verticeIndex = this.getVerticeIndex(i, j)

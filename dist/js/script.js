@@ -120,7 +120,7 @@ var Engine = function () {
         this.camera.position.set(0, -70, 50);
         // Instantiate render.
         this.renderer = new THREE.WebGLRenderer();
-        this.renderer.setClearColor(0xFFFFFF);
+        this.renderer.setClearColor(0xfff6e6);
         this.renderer.setSize(this.width, this.height);
         document.body.appendChild(this.renderer.domElement);
         // Instantiate controls.
@@ -128,9 +128,10 @@ var Engine = function () {
         // Instantiate raycaster.
         this.raycaster = new THREE.Raycaster();
         var geometry = new THREE.PlaneGeometry(this.PLANE_WIDTH, this.PLANE_HEIGHT, this.ROWS, this.COLUMNS);
-        var material = new THREE.MeshBasicMaterial({
-            color: 0x333333,
-            wireframe: true
+        var material = new THREE.MeshPhongMaterial({
+            color: 0x00EEEE,
+            flatShading: true,
+            shininess: 5
         });
         var plane = new THREE.Mesh(geometry, material);
         plane.position.z = 20;
@@ -143,6 +144,30 @@ var Engine = function () {
         this.addEventListeners();
         this.initializeHeightMap();
         this.initializeRandomHeight();
+        this.renderer.gammaInput = true;
+        this.renderer.gammaOutput = true;
+        this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.renderReverseSided = false;
+        // Hemisphere Light
+        var hemiLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.6);
+        hemiLight.groundColor.setHSL(0.1, 0.2, 0.2);
+        this.scene.add(hemiLight);
+        // // Directional Light
+        var d = 50;
+        var dirLight = new THREE.DirectionalLight(0x000000, 0.5);
+        dirLight.color.setHSL(0.1, 1, 0.95);
+        dirLight.position.set(-1, 1.75, 1);
+        dirLight.position.multiplyScalar(30);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        dirLight.shadow.camera.left = -d;
+        dirLight.shadow.camera.right = d;
+        dirLight.shadow.camera.top = d;
+        dirLight.shadow.camera.bottom = -d;
+        dirLight.shadow.camera.far = 3500;
+        dirLight.shadow.bias = -0.0001;
+        this.scene.add(dirLight);
     }
 
     _createClass(Engine, [{

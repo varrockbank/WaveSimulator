@@ -52,6 +52,58 @@ export class Engine {
     this.animate()
 
     this.addEventListeners()
+
+    this.initializeRandomHeight()
+  }
+
+  /** Return -1, 0, 1 */
+  private getRandomDirection(): number{
+    return  Math.floor(3 * Math.random()) - 1
+  }
+
+  private initializeRandomHeight() {
+    const rows = 1;
+    const heightMap = new Array(this.ROWS+1);
+    for(let i = 0 ; i < heightMap.length; i++) {
+      heightMap[i] = (new Array(this.COLUMNS + 1))
+    }
+
+    // Seed the first cell.
+    heightMap[0][0] = Math.floor(5 * Math.random());
+    // Random walk along first row.
+    for(let j = 1 ; j < this.COLUMNS + 1 ; j++) {
+      const prev = heightMap[0][j-1];
+      const height = prev + this.getRandomDirection()
+      heightMap[0][j] = height
+    }
+    // Random walk along first column.
+    for(let i = 1 ; i < this.ROWS + 1 ; i++) {
+      const prev = heightMap[i-1][0];
+      const height = prev + this.getRandomDirection()
+      heightMap[i][0] = height
+    }
+
+    // Loop over inner rows, assigning height as +-1 from midpoint of top and left neighbor
+    for(let j = 1 ; j < this.COLUMNS + 1 ; j++) {
+      for(let i = 1 ; i < this.ROWS + 1 ; i++) {
+        const topNeighbor = heightMap[i-1][j]
+        const leftNeighbor = heightMap[i][j-1]
+        const midpoint = ( topNeighbor + leftNeighbor ) /2
+        heightMap[i][j] = Math.round(midpoint) + this.getRandomDirection()
+      }
+    }
+
+    // Map heightMap to geometry
+    for(let i = 0 ; i < heightMap.length; i++) {
+      const row = heightMap[i]
+      for(let j = 0 ; j < row.length; j++) {
+        const height = row[j]
+        const verticeIndex = this.getVerticeIndex(i, j)
+        this.updateGeometry(verticeIndex, height)
+      }
+    }
+
+    this.refreshGeometry()
   }
 
   private animate() {
@@ -60,8 +112,15 @@ export class Engine {
     this.renderer.render(this.scene, this.camera)
   }
 
-  private updateGeometry(verticeIndex) {
-    this.geometry.vertices[verticeIndex].z ++
+  private updateGeometry(verticeIndex, height?) {
+    if(height) {
+      this.geometry.vertices[verticeIndex].z = height;
+    } else {
+      this.geometry.vertices[verticeIndex].z++;
+    }
+  }
+
+  private refreshGeometry() {
     this.geometry.verticesNeedUpdate = true;
   }
 
@@ -91,6 +150,7 @@ export class Engine {
       const rowIndex = -1 * Math.round(y / this.CELL_HEIGHT) + (this.ROWS / 2);
       const verticeIndex = this.getVerticeIndex(rowIndex, columnIndex);
       this.updateGeometry(verticeIndex)
+      this.refreshGeometry()
     }
   }
 

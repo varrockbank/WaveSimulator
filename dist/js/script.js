@@ -103,6 +103,8 @@ var Engine = function () {
         this.PLANE_HEIGHT = 100;
         this.CELL_HEIGHT = this.PLANE_HEIGHT / this.ROWS;
         this.CELL_WIDTH = this.PLANE_WIDTH / this.COLUMNS;
+        // Keypress to triggler one cycle of simulation.
+        this.KEYUP_EVENT_KEY = 'x';
         // Instance Scene.
         this.scene = new THREE.Scene();
         // Instantiate Camera.
@@ -131,9 +133,59 @@ var Engine = function () {
         this.scene.add(axes);
         this.animate();
         this.addEventListeners();
+        this.initializeRandomHeight();
     }
+    /** Return -1, 0, 1 */
+
 
     _createClass(Engine, [{
+        key: "getRandomDirection",
+        value: function getRandomDirection() {
+            return Math.floor(3 * Math.random()) - 1;
+        }
+    }, {
+        key: "initializeRandomHeight",
+        value: function initializeRandomHeight() {
+            var rows = 1;
+            var heightMap = new Array(this.ROWS + 1);
+            for (var i = 0; i < heightMap.length; i++) {
+                heightMap[i] = new Array(this.COLUMNS + 1);
+            }
+            // Seed the first cell.
+            heightMap[0][0] = Math.floor(5 * Math.random());
+            // Random walk along first row.
+            for (var j = 1; j < this.COLUMNS + 1; j++) {
+                var prev = heightMap[0][j - 1];
+                var height = prev + this.getRandomDirection();
+                heightMap[0][j] = height;
+            }
+            // Random walk along first column.
+            for (var _i = 1; _i < this.ROWS + 1; _i++) {
+                var _prev = heightMap[_i - 1][0];
+                var _height = _prev + this.getRandomDirection();
+                heightMap[_i][0] = _height;
+            }
+            // Loop over inner rows
+            for (var _j = 1; _j < this.COLUMNS + 1; _j++) {
+                for (var _i2 = 1; _i2 < this.ROWS + 1; _i2++) {
+                    var topNeighbor = heightMap[_i2 - 1][_j];
+                    var leftNeighbor = heightMap[_i2][_j - 1];
+                    var midpoint = (topNeighbor + leftNeighbor) / 2;
+                    heightMap[_i2][_j] = Math.round(midpoint) + this.getRandomDirection();
+                }
+            }
+            // Map heightMap to geometry
+            for (var _i3 = 0; _i3 < heightMap.length; _i3++) {
+                var row = heightMap[_i3];
+                for (var _j2 = 0; _j2 < row.length; _j2++) {
+                    var _height2 = row[_j2];
+                    var verticeIndex = this.getVerticeIndex(_i3, _j2);
+                    this.updateGeometry(verticeIndex, _height2);
+                }
+            }
+            this.refreshGeometry();
+        }
+    }, {
         key: "animate",
         value: function animate() {
             var _this = this;
@@ -146,8 +198,16 @@ var Engine = function () {
         }
     }, {
         key: "updateGeometry",
-        value: function updateGeometry(verticeIndex) {
-            this.geometry.vertices[verticeIndex].z++;
+        value: function updateGeometry(verticeIndex, height) {
+            if (height) {
+                this.geometry.vertices[verticeIndex].z = height;
+            } else {
+                this.geometry.vertices[verticeIndex].z++;
+            }
+        }
+    }, {
+        key: "refreshGeometry",
+        value: function refreshGeometry() {
             this.geometry.verticesNeedUpdate = true;
         }
     }, {
@@ -157,6 +217,9 @@ var Engine = function () {
 
             window.addEventListener('mouseup', function (e) {
                 _this2.handleClick(e);
+            }, false);
+            window.addEventListener('keyup', function (event) {
+                _this2.onKeyUp(event);
             }, false);
         }
     }, {
@@ -184,7 +247,15 @@ var Engine = function () {
                 var rowIndex = -1 * Math.round(_y / this.CELL_HEIGHT) + this.ROWS / 2;
                 var verticeIndex = this.getVerticeIndex(rowIndex, columnIndex);
                 this.updateGeometry(verticeIndex);
+                this.refreshGeometry();
             }
+        }
+    }, {
+        key: "onKeyUp",
+        value: function onKeyUp(event) {
+            var key = event.key;
+
+            if (key === this.KEYUP_EVENT_KEY) {}
         }
     }, {
         key: "getVerticeIndex",

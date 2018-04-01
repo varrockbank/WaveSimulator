@@ -99,10 +99,14 @@ var Engine = function () {
         this.height = window.innerHeight;
         this.ROWS = 20;
         this.COLUMNS = 20;
+        this.PLANE_WIDTH = 100;
+        this.PLANE_HEIGHT = 100;
+        this.CELL_HEIGHT = this.PLANE_HEIGHT / this.ROWS;
+        this.CELL_WIDTH = this.PLANE_WIDTH / this.COLUMNS;
         // Instance Scene.
         this.scene = new THREE.Scene();
         // Instantiate Camera.
-        this.camera = new THREE.PerspectiveCamera(80, this.width / this.height, 1, 1000);
+        this.camera = new THREE.PerspectiveCamera(45, this.width / this.height, 1, 1000);
         this.camera.position.set(0, -70, 50);
         // Instantiate render.
         this.renderer = new THREE.WebGLRenderer();
@@ -113,7 +117,7 @@ var Engine = function () {
         this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
         // Instantiate raycaster.
         this.raycaster = new THREE.Raycaster();
-        var geometry = new THREE.PlaneGeometry(100, 100, this.ROWS, this.COLUMNS);
+        var geometry = new THREE.PlaneGeometry(this.PLANE_WIDTH, this.PLANE_HEIGHT, this.ROWS, this.COLUMNS);
         var material = new THREE.MeshBasicMaterial({
             color: 0x333333,
             wireframe: true
@@ -126,7 +130,6 @@ var Engine = function () {
         var axes = new THREE.AxisHelper(100);
         this.scene.add(axes);
         this.animate();
-        this.updateGeometry();
         this.addEventListeners();
     }
 
@@ -143,8 +146,8 @@ var Engine = function () {
         }
     }, {
         key: "updateGeometry",
-        value: function updateGeometry() {
-            this.geometry.vertices[0].z = 50;
+        value: function updateGeometry(verticeIndex) {
+            this.geometry.vertices[verticeIndex].z++;
             this.geometry.verticesNeedUpdate = true;
         }
     }, {
@@ -153,12 +156,12 @@ var Engine = function () {
             var _this2 = this;
 
             window.addEventListener('mouseup', function (e) {
-                _this2.click(e);
+                _this2.handleClick(e);
             }, false);
         }
     }, {
-        key: "click",
-        value: function click(event) {
+        key: "handleClick",
+        value: function handleClick(event) {
             var _this3 = this;
 
             // calculate mouse position in normalized device coordinates
@@ -175,9 +178,18 @@ var Engine = function () {
                 var _planeIntersect$point = planeIntersect.point,
                     _x = _planeIntersect$point.x,
                     _y = _planeIntersect$point.y;
+                // These are sequenced to match the vertices indexing.
 
-                console.log('x: ' + _x + 'y: ' + _y);
+                var columnIndex = Math.round(_x / this.CELL_WIDTH) + this.COLUMNS / 2;
+                var rowIndex = -1 * Math.round(_y / this.CELL_HEIGHT) + this.ROWS / 2;
+                var verticeIndex = this.getVerticeIndex(rowIndex, columnIndex);
+                this.updateGeometry(verticeIndex);
             }
+        }
+    }, {
+        key: "getVerticeIndex",
+        value: function getVerticeIndex(rowIndex, columnIndex) {
+            return rowIndex * (this.COLUMNS + 1) + columnIndex;
         }
     }]);
 

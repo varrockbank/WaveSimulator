@@ -4,6 +4,10 @@ export class Engine {
 
   private readonly ROWS = 20
   private readonly COLUMNS = 20
+  private readonly PLANE_WIDTH = 100
+  private readonly PLANE_HEIGHT = 100
+  private readonly CELL_HEIGHT = this.PLANE_HEIGHT / this.ROWS
+  private readonly CELL_WIDTH = this.PLANE_WIDTH / this.COLUMNS
 
   private scene: THREE.Scene
   private camera: THREE.Camera
@@ -19,7 +23,7 @@ export class Engine {
     // Instance Scene.
     this.scene = new THREE.Scene()
     // Instantiate Camera.
-    this.camera = new THREE.PerspectiveCamera(80, this.width / this.height, 1, 1000)
+    this.camera = new THREE.PerspectiveCamera(45, this.width / this.height, 1, 1000)
     this.camera.position.set(0, -70, 50)
     // Instantiate render.
     this.renderer = new THREE.WebGLRenderer()
@@ -31,7 +35,7 @@ export class Engine {
     // Instantiate raycaster.
     this.raycaster = new THREE.Raycaster()
     
-    const geometry = new THREE.PlaneGeometry(100, 100, this.ROWS, this.COLUMNS)
+    const geometry = new THREE.PlaneGeometry(this.PLANE_WIDTH, this.PLANE_HEIGHT, this.ROWS, this.COLUMNS)
     const material = new THREE.MeshBasicMaterial({
         color: 0x333333, 
         wireframe: true
@@ -46,7 +50,6 @@ export class Engine {
     this.scene.add(axes)
 
     this.animate()
-    this.updateGeometry()
 
     this.addEventListeners()
   }
@@ -57,8 +60,8 @@ export class Engine {
     this.renderer.render(this.scene, this.camera)
   }
 
-  private updateGeometry() {
-    this.geometry.vertices[0].z = 50;
+  private updateGeometry(verticeIndex) {
+    this.geometry.vertices[verticeIndex].z ++
     this.geometry.verticesNeedUpdate = true;
   }
 
@@ -82,7 +85,16 @@ export class Engine {
           y
         }
       } = planeIntersect;
-      console.log('x: ' + x + 'y: ' + y);
+
+      // These are sequenced to match the vertices indexing.
+      const columnIndex = Math.round(x / this.CELL_WIDTH) + (this.COLUMNS / 2);
+      const rowIndex = -1 * Math.round(y / this.CELL_HEIGHT) + (this.ROWS / 2);
+      const verticeIndex = this.getVerticeIndex(rowIndex, columnIndex);
+      this.updateGeometry(verticeIndex)
     }
+  }
+
+  private getVerticeIndex(rowIndex, columnIndex) {
+    return rowIndex * (this.COLUMNS + 1) + columnIndex;
   }
 }

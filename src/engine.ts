@@ -63,7 +63,22 @@ export class Engine {
   }
 
   private iterate() {
-    this.initializeRandomHeight()
+    const heightMap = this.heightMap
+    // Move height at constant speed of 1 towards 0.
+    for(let i = 0 ; i < heightMap.length; i++) {
+      const row = heightMap[i]
+      for(let j = 0 ; j < row.length; j++) {
+        if(row[j] > 0) {
+          row[j]--
+        } else if (row[j] < 0) {
+          row[j]++
+        }
+        const height = row[j]
+        const verticeIndex = this.getVerticeIndex(i, j)
+        this.updateGeometry(verticeIndex, height)
+      }
+    }
+    this.refreshGeometry()
   }
 
   /** Return -1, 0, 1 */
@@ -82,7 +97,7 @@ export class Engine {
   private initializeRandomHeight() {
     const heightMap = this.heightMap
     // Seed the first cell.
-    heightMap[0][0] = Math.floor(5 * Math.random());
+    heightMap[0][0] = Math.floor(5 * Math.random()) * this.getRandomDirection()
     // Random walk along first row.
     for(let j = 1 ; j < this.COLUMNS + 1 ; j++) {
       const prev = heightMap[0][j-1];
@@ -126,7 +141,7 @@ export class Engine {
   }
 
   private updateGeometry(verticeIndex, height?) {
-    if(height) {
+    if(height != undefined && height != null) {
       this.geometry.vertices[verticeIndex].z = height;
     } else {
       this.geometry.vertices[verticeIndex].z++;

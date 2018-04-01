@@ -3,11 +3,14 @@ export class Engine {
   private height = window.innerHeight
 
   // Physics parameters.
-  private K = 0.01 // "Hooke's constant"
+  private K = 0.02 // "Hooke's constant"
   private D = 0.025 // Dampening Factor
+  private S = 0.0005 // Wave spread.
+  private BACK_PROPAGATIONS = 4
+  private TERMINAL_VELOCITY = 1.5
 
-  private readonly ROWS = 50
-  private readonly COLUMNS = 50
+  private readonly ROWS = 100
+  private readonly COLUMNS = 100
   private readonly PLANE_WIDTH = 100
   private readonly PLANE_HEIGHT = 100
   private readonly CELL_HEIGHT = this.PLANE_HEIGHT / this.ROWS
@@ -72,7 +75,6 @@ export class Engine {
     const heightMap = this.heightMap
     const velocityMap = this.velocityMap
 
-    // Move height at constant speed of 1 towards 0.
     for(let i = 0 ; i < heightMap.length; i++) {
       const rowHeight = heightMap[i]
       const rowVelocity = velocityMap[i]
@@ -84,18 +86,93 @@ export class Engine {
         const height = rowHeight[j]
         const x = height - targetHeight
         const acceleration = (-1 * this.K * x) - ( this.D * velocity)
-        rowVelocity[j] += acceleration
-
+        rowVelocity[j] += this.roundDecimal(acceleration)
+        rowVelocity[j] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(rowVelocity[j]))
         const verticeIndex = this.getVerticeIndex(i, j)
         this.updateGeometry(verticeIndex, height)
       }
     }
+
+    const leftDelta = new Array(this.ROWS + 1);
+    const rightDelta = new Array(this.ROWS + 1);
+    for(let i = 0 ; i < this.ROWS + 1; i++) {
+      leftDelta[i] = (new Array(this.COLUMNS + 1)).fill(0)
+      rightDelta[i] = (new Array(this.COLUMNS + 1)).fill(0)
+    }
+    for(let l = 0 ; l < this.BACK_PROPAGATIONS; l++) {
+      for(let i = 0 ; i < heightMap.length; i++) {
+        const rowHeight = heightMap[i]
+        const rowVelocity = velocityMap[i]
+        for(let j = 1; j < rowHeight.length; j++) {
+          leftDelta[i][j] = this.roundDecimal(this.S * (rowHeight[j] - rowHeight[j-1]))
+          rowVelocity[j] += leftDelta[i][j]
+          if(rowVelocity[j] < 0 ) {
+            rowVelocity[j] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(rowVelocity[j]))            
+          } else if (rowVelocity[j] > 0 ) {
+            rowVelocity[j] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(rowVelocity[j]))
+          }
+        }
+        for(let j = 0; j < rowHeight.length - 1; j++) {
+          rightDelta[i][j] = this.roundDecimal(this.S * (rowHeight[j] - rowHeight[j+1]))
+          rowVelocity[j] += rightDelta[i][j]
+          if(rowVelocity[j] < 0 ) {
+            rowVelocity[j] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(rowVelocity[j]))
+          } else if (rowVelocity[j] > 0 ) {
+            rowVelocity[j] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(rowVelocity[j]))
+          }
+        }
+      }
+
+      for(let i = 0 ; i < heightMap.length; i++) {
+        const rowHeight = heightMap[i]
+        for(let j = 1; j < rowHeight.length; j++) {
+          heightMap[i][j-1] += leftDelta[i][j]
+        }
+        for(let j = 0; j < rowHeight.length - 1; j++) {
+          heightMap[i][j+1] += rightDelta[i][j]
+        }
+      }
+    }
+
+    const topDelta = new Array(this.COLUMNS + 1);
+    const bottomDelta = new Array(this.COLUMNS + 1);
+    for(let i = 0 ; i < this.COLUMNS + 1; i++) {
+      topDelta[i] = (new Array(this.ROWS + 1)).fill(0)
+      bottomDelta[i] = (new Array(this.ROWS + 1)).fill(0)
+    }
+    for(let l = 0 ; l < this.BACK_PROPAGATIONS; l++) {
+      for(let j = 0 ; j < heightMap[0].length; j++) {
+        for(let i = 1; i < heightMap.length; i++) {
+          topDelta[i][j] = this.roundDecimal(this.S * ( heightMap[i][j] - heightMap[i-1][j] ))
+          velocityMap[i][j] += topDelta[i][j]
+          if(velocityMap[i][j] < 0) {
+            velocityMap[i][j] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[i][j]))            
+          } else if (velocityMap[i][j] > 0) {
+            velocityMap[i][j] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[i][j]))            
+          }
+        }
+        for(let i = 0; i < heightMap.length - 1; i++) {
+          bottomDelta[i][j] = this.S * ( heightMap[i][j] - heightMap[i+1][j] )
+          velocityMap[i][j] += bottomDelta[i][j]
+          if(velocityMap[i][j] < 0) {
+            velocityMap[i][j] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[i][j]))            
+          } else if (velocityMap[i][j] > 0) {
+            velocityMap[i][j] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[i][j]))            
+          }
+        }
+      }
+    }
+
     this.refreshGeometry()
   }
 
   /** Return -1, 0, 1 */
   private getRandomDirection(): number{
     return  Math.floor(3 * Math.random()) - 1
+  }
+  
+  private roundDecimal(num) {
+    return Math.round(num * 10000) / 10000
   }
 
   private initializeHeightMap() {
@@ -205,8 +282,7 @@ export class Engine {
       // These are sequenced to match the vertices indexing.
       const columnIndex = Math.round(x / this.CELL_WIDTH) + (this.COLUMNS / 2);
       const rowIndex = -1 * Math.round(y / this.CELL_HEIGHT) + (this.ROWS / 2);
-      const verticeIndex = this.getVerticeIndex(rowIndex, columnIndex);
-      this.updateGeometry(verticeIndex)
+      this.heightMap[rowIndex][columnIndex] = 5
       this.refreshGeometry()
     }
   }

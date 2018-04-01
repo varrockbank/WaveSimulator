@@ -97,6 +97,8 @@ var Engine = function () {
 
         this.width = window.innerWidth;
         this.height = window.innerHeight;
+        // Physics parameters.
+        this.K = 0.005; // "Hooke's constant"
         this.ROWS = 20;
         this.COLUMNS = 20;
         this.PLANE_WIDTH = 100;
@@ -105,6 +107,7 @@ var Engine = function () {
         this.CELL_WIDTH = this.PLANE_WIDTH / this.COLUMNS;
         // Key press to trigger a simulation cycle.
         this.ITERATION_TRIGGER_KEY = 'x';
+        this.AUTOMATIC_TRIGGER_KEY = 'y';
         // Instance Scene.
         this.scene = new THREE.Scene();
         // Instantiate Camera.
@@ -141,16 +144,18 @@ var Engine = function () {
         key: "iterate",
         value: function iterate() {
             var heightMap = this.heightMap;
+            var velocityMap = this.velocityMap;
             // Move height at constant speed of 1 towards 0.
             for (var i = 0; i < heightMap.length; i++) {
-                var row = heightMap[i];
-                for (var j = 0; j < row.length; j++) {
-                    if (row[j] > 0) {
-                        row[j]--;
-                    } else if (row[j] < 0) {
-                        row[j]++;
-                    }
-                    var height = row[j];
+                var rowHeight = heightMap[i];
+                var rowVelocity = velocityMap[i];
+                for (var j = 0; j < rowHeight.length; j++) {
+                    var targetHeight = 0;
+                    var height = rowHeight[j];
+                    var x = height - targetHeight;
+                    var acceleration = -1 * this.K * x;
+                    rowHeight[j] += rowVelocity[j];
+                    rowVelocity[j] += acceleration;
                     var verticeIndex = this.getVerticeIndex(i, j);
                     this.updateGeometry(verticeIndex, height);
                 }
@@ -172,6 +177,11 @@ var Engine = function () {
                 heightMap[i] = new Array(this.COLUMNS + 1).fill(0);
             }
             this.heightMap = heightMap;
+            var velocityMap = new Array(this.ROWS + 1);
+            for (var _i = 0; _i < velocityMap.length; _i++) {
+                velocityMap[_i] = new Array(this.COLUMNS + 1).fill(0);
+            }
+            this.velocityMap = velocityMap;
         }
     }, {
         key: "initializeRandomHeight",
@@ -193,19 +203,19 @@ var Engine = function () {
             }
             // Loop over inner rows, assigning height as +-1 from midpoint of top and left neighbor
             for (var _j = 1; _j < this.COLUMNS + 1; _j++) {
-                for (var _i = 1; _i < this.ROWS + 1; _i++) {
-                    var topNeighbor = heightMap[_i - 1][_j];
-                    var leftNeighbor = heightMap[_i][_j - 1];
+                for (var _i2 = 1; _i2 < this.ROWS + 1; _i2++) {
+                    var topNeighbor = heightMap[_i2 - 1][_j];
+                    var leftNeighbor = heightMap[_i2][_j - 1];
                     var midpoint = (topNeighbor + leftNeighbor) / 2;
-                    heightMap[_i][_j] = Math.round(midpoint) + this.getRandomDirection();
+                    heightMap[_i2][_j] = Math.round(midpoint) + this.getRandomDirection();
                 }
             }
             // Map heightMap to geometry
-            for (var _i2 = 0; _i2 < heightMap.length; _i2++) {
-                var row = heightMap[_i2];
+            for (var _i3 = 0; _i3 < heightMap.length; _i3++) {
+                var row = heightMap[_i3];
                 for (var _j2 = 0; _j2 < row.length; _j2++) {
                     var _height2 = row[_j2];
-                    var verticeIndex = this.getVerticeIndex(_i2, _j2);
+                    var verticeIndex = this.getVerticeIndex(_i3, _j2);
                     this.updateGeometry(verticeIndex, _height2);
                 }
             }
@@ -251,16 +261,23 @@ var Engine = function () {
     }, {
         key: "handleKeyUp",
         value: function handleKeyUp(event) {
+            var _this3 = this;
+
             var key = event.key;
 
             if (key.toLowerCase() == this.ITERATION_TRIGGER_KEY) {
                 this.iterate();
             }
+            if (key.toLowerCase() == this.AUTOMATIC_TRIGGER_KEY) {
+                setInterval(function () {
+                    _this3.iterate();
+                }, 100);
+            }
         }
     }, {
         key: "handleClick",
         value: function handleClick(event) {
-            var _this3 = this;
+            var _this4 = this;
 
             // calculate mouse position in normalized device coordinates
             // (-1 to +1) for both components
@@ -270,7 +287,7 @@ var Engine = function () {
             this.raycaster.setFromCamera(mouse, this.camera);
             var intersects = this.raycaster.intersectObjects(this.scene.children);
             var planeIntersect = intersects.find(function (intersect) {
-                return intersect.object.uuid === _this3.planeUUID;
+                return intersect.object.uuid === _this4.planeUUID;
             });
             if (planeIntersect) {
                 var _planeIntersect$point = planeIntersect.point,

@@ -2,6 +2,9 @@ export class Engine {
   private width = window.innerWidth
   private height = window.innerHeight
 
+  // Physics parameters.
+  private K = 0.005; // "Hooke's constant"
+
   private readonly ROWS = 20
   private readonly COLUMNS = 20
   private readonly PLANE_WIDTH = 100
@@ -9,10 +12,12 @@ export class Engine {
   private readonly CELL_HEIGHT = this.PLANE_HEIGHT / this.ROWS
   private readonly CELL_WIDTH = this.PLANE_WIDTH / this.COLUMNS
 
-  private heightMap: number[][];
+  private heightMap: number[][]
+  private velocityMap: number[][]
 
   // Key press to trigger a simulation cycle.
   private readonly ITERATION_TRIGGER_KEY = 'x';
+  private readonly AUTOMATIC_TRIGGER_KEY = 'y';
 
   private scene: THREE.Scene
   private camera: THREE.Camera
@@ -64,16 +69,20 @@ export class Engine {
 
   private iterate() {
     const heightMap = this.heightMap
+    const velocityMap = this.velocityMap
+
     // Move height at constant speed of 1 towards 0.
     for(let i = 0 ; i < heightMap.length; i++) {
-      const row = heightMap[i]
-      for(let j = 0 ; j < row.length; j++) {
-        if(row[j] > 0) {
-          row[j]--
-        } else if (row[j] < 0) {
-          row[j]++
-        }
-        const height = row[j]
+      const rowHeight = heightMap[i]
+      const rowVelocity = velocityMap[i]
+      for(let j = 0 ; j < rowHeight.length; j++) {
+        const targetHeight = 0
+        const height = rowHeight[j]
+        const x = height - targetHeight
+        const acceleration = -1 * this.K * x
+        rowHeight[j] += rowVelocity[j]
+        rowVelocity[j] += acceleration
+
         const verticeIndex = this.getVerticeIndex(i, j)
         this.updateGeometry(verticeIndex, height)
       }
@@ -92,6 +101,12 @@ export class Engine {
       heightMap[i] = (new Array(this.COLUMNS + 1)).fill(0)
     }
     this.heightMap = heightMap
+
+    const velocityMap = new Array(this.ROWS+1);
+    for(let i = 0 ; i < velocityMap.length; i++) {
+      velocityMap[i] = (new Array(this.COLUMNS + 1)).fill(0)
+    }
+    this.velocityMap = velocityMap
   }
 
   private initializeRandomHeight() {
@@ -144,7 +159,7 @@ export class Engine {
     if(height != undefined && height != null) {
       this.geometry.vertices[verticeIndex].z = height;
     } else {
-      this.geometry.vertices[verticeIndex].z++;
+      this.geometry.vertices[verticeIndex].z++ 
     }
   }
 
@@ -161,6 +176,9 @@ export class Engine {
     const { key } = event;
     if(key.toLowerCase() == this.ITERATION_TRIGGER_KEY) {
       this.iterate()
+    }
+    if(key.toLowerCase() == this.AUTOMATIC_TRIGGER_KEY) {
+      setInterval(() => { this.iterate() }, 100)
     }
   }
 

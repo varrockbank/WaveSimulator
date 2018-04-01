@@ -1,16 +1,23 @@
+interface Point {
+  x: number,
+  y: number,
+  z?: number,
+}
+
+
 export class Engine {
   private width = window.innerWidth
   private height = window.innerHeight
 
   // Physics parameters.
-  private K = 0.02 // "Hooke's constant"
+  private K = 0.03 // "Hooke's constant"
   private D = 0.025 // Dampening Factor
   private S = 0.0005 // Wave spread.
   private BACK_PROPAGATIONS = 4
   private TERMINAL_VELOCITY = 1.5
 
-  private readonly ROWS = 100
-  private readonly COLUMNS = 100
+  private readonly ROWS = 50
+  private readonly COLUMNS = 50
   private readonly PLANE_WIDTH = 100
   private readonly PLANE_HEIGHT = 100
   private readonly CELL_HEIGHT = this.PLANE_HEIGHT / this.ROWS
@@ -282,12 +289,71 @@ export class Engine {
       // These are sequenced to match the vertices indexing.
       const columnIndex = Math.round(x / this.CELL_WIDTH) + (this.COLUMNS / 2);
       const rowIndex = -1 * Math.round(y / this.CELL_HEIGHT) + (this.ROWS / 2);
-      this.heightMap[rowIndex][columnIndex] = 5
+
+      const points = this.getRasterizedCircle({x: rowIndex, y: columnIndex})
+
+      points.filter(({x, y}) => x >= 0 && x < this.COLUMNS && y >= 0 && y <= this.ROWS)
+        .forEach(point => {
+          this.heightMap[point.x][point.y] = point.z
+        });
+
       this.refreshGeometry()
     }
   }
 
   private getVerticeIndex(rowIndex, columnIndex) {
     return rowIndex * (this.COLUMNS + 1) + columnIndex;
+  }
+
+  // TODO: Use midpoint circle algorithm
+  private getRasterizedCircle(center: Point): Point[] {
+    const summit = 6
+    const points = []
+    points.push({
+      x: center.x,
+      y: center.y,
+      z: summit
+    })
+    points.push({
+      x: center.x - 1,
+      y: center.y,
+      z: summit - 1
+    })
+    points.push({
+      x: center.x + 1,
+      y: center.y,
+      z: summit - 1
+    })
+    points.push({
+      x: center.x,
+      y: center.y - 1,
+      z: summit - 1
+    })
+    points.push({
+      x: center.x,
+      y: center.y + 1,
+      z: summit - 1
+    })
+    points.push({
+      x: center.x - 1,
+      y: center.y - 1,
+      z: summit - 2
+    })
+    points.push({
+      x: center.x + 1,
+      y: center.y + 1,
+      z: summit - 2
+    })
+    points.push({
+      x: center.x - 1,
+      y: center.y + 1,
+      z: summit - 2
+    })
+    points.push({
+      x: center.x + 1,
+      y: center.y - 1,
+      z: summit - 2
+    })
+    return points
   }
 }

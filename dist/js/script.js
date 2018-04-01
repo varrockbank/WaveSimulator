@@ -98,13 +98,13 @@ var Engine = function () {
         this.width = window.innerWidth;
         this.height = window.innerHeight;
         // Physics parameters.
-        this.K = 0.02; // "Hooke's constant"
+        this.K = 0.03; // "Hooke's constant"
         this.D = 0.025; // Dampening Factor
         this.S = 0.0005; // Wave spread.
         this.BACK_PROPAGATIONS = 4;
         this.TERMINAL_VELOCITY = 1.5;
-        this.ROWS = 100;
-        this.COLUMNS = 100;
+        this.ROWS = 50;
+        this.COLUMNS = 50;
         this.PLANE_WIDTH = 100;
         this.PLANE_HEIGHT = 100;
         this.CELL_HEIGHT = this.PLANE_HEIGHT / this.ROWS;
@@ -374,7 +374,14 @@ var Engine = function () {
 
                 var columnIndex = Math.round(_x / this.CELL_WIDTH) + this.COLUMNS / 2;
                 var rowIndex = -1 * Math.round(_y / this.CELL_HEIGHT) + this.ROWS / 2;
-                this.heightMap[rowIndex][columnIndex] = 5;
+                var points = this.getRasterizedCircle({ x: rowIndex, y: columnIndex });
+                points.filter(function (_ref) {
+                    var x = _ref.x,
+                        y = _ref.y;
+                    return x >= 0 && x < _this4.COLUMNS && y >= 0 && y <= _this4.ROWS;
+                }).forEach(function (point) {
+                    _this4.heightMap[point.x][point.y] = point.z;
+                });
                 this.refreshGeometry();
             }
         }
@@ -382,6 +389,60 @@ var Engine = function () {
         key: "getVerticeIndex",
         value: function getVerticeIndex(rowIndex, columnIndex) {
             return rowIndex * (this.COLUMNS + 1) + columnIndex;
+        }
+        // TODO: Use midpoint circle algorithm
+
+    }, {
+        key: "getRasterizedCircle",
+        value: function getRasterizedCircle(center) {
+            var summit = 6;
+            var points = [];
+            points.push({
+                x: center.x,
+                y: center.y,
+                z: summit
+            });
+            points.push({
+                x: center.x - 1,
+                y: center.y,
+                z: summit - 1
+            });
+            points.push({
+                x: center.x + 1,
+                y: center.y,
+                z: summit - 1
+            });
+            points.push({
+                x: center.x,
+                y: center.y - 1,
+                z: summit - 1
+            });
+            points.push({
+                x: center.x,
+                y: center.y + 1,
+                z: summit - 1
+            });
+            points.push({
+                x: center.x - 1,
+                y: center.y - 1,
+                z: summit - 2
+            });
+            points.push({
+                x: center.x + 1,
+                y: center.y + 1,
+                z: summit - 2
+            });
+            points.push({
+                x: center.x - 1,
+                y: center.y + 1,
+                z: summit - 2
+            });
+            points.push({
+                x: center.x + 1,
+                y: center.y - 1,
+                z: summit - 2
+            });
+            return points;
         }
     }]);
 

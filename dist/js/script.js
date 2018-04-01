@@ -103,8 +103,8 @@ var Engine = function () {
         this.PLANE_HEIGHT = 100;
         this.CELL_HEIGHT = this.PLANE_HEIGHT / this.ROWS;
         this.CELL_WIDTH = this.PLANE_WIDTH / this.COLUMNS;
-        // Keypress to triggler one cycle of simulation.
-        this.KEYUP_EVENT_KEY = 'x';
+        // Key press to trigger a simulation cycle.
+        this.ITERATION_TRIGGER_KEY = 'x';
         // Instance Scene.
         this.scene = new THREE.Scene();
         // Instantiate Camera.
@@ -135,10 +135,15 @@ var Engine = function () {
         this.addEventListeners();
         this.initializeRandomHeight();
     }
-    /** Return -1, 0, 1 */
-
 
     _createClass(Engine, [{
+        key: "iterate",
+        value: function iterate() {
+            this.initializeRandomHeight();
+        }
+        /** Return -1, 0, 1 */
+
+    }, {
         key: "getRandomDirection",
         value: function getRandomDirection() {
             return Math.floor(3 * Math.random()) - 1;
@@ -165,7 +170,7 @@ var Engine = function () {
                 var _height = _prev + this.getRandomDirection();
                 heightMap[_i][0] = _height;
             }
-            // Loop over inner rows
+            // Loop over inner rows, assigning height as +-1 from midpoint of top and left neighbor
             for (var _j = 1; _j < this.COLUMNS + 1; _j++) {
                 for (var _i2 = 1; _i2 < this.ROWS + 1; _i2++) {
                     var topNeighbor = heightMap[_i2 - 1][_j];
@@ -218,9 +223,18 @@ var Engine = function () {
             window.addEventListener('mouseup', function (e) {
                 _this2.handleClick(e);
             }, false);
-            window.addEventListener('keyup', function (event) {
-                _this2.onKeyUp(event);
+            window.addEventListener('keyup', function (e) {
+                _this2.handleKeyUp(e);
             }, false);
+        }
+    }, {
+        key: "handleKeyUp",
+        value: function handleKeyUp(event) {
+            var key = event.key;
+
+            if (key.toLowerCase() == this.ITERATION_TRIGGER_KEY) {
+                this.iterate();
+            }
         }
     }, {
         key: "handleClick",
@@ -249,13 +263,6 @@ var Engine = function () {
                 this.updateGeometry(verticeIndex);
                 this.refreshGeometry();
             }
-        }
-    }, {
-        key: "onKeyUp",
-        value: function onKeyUp(event) {
-            var key = event.key;
-
-            if (key === this.KEYUP_EVENT_KEY) {}
         }
     }, {
         key: "getVerticeIndex",

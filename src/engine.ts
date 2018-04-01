@@ -9,6 +9,9 @@ export class Engine {
   private readonly CELL_HEIGHT = this.PLANE_HEIGHT / this.ROWS
   private readonly CELL_WIDTH = this.PLANE_WIDTH / this.COLUMNS
 
+  // Key press to trigger a simulation cycle.
+  private readonly ITERATION_TRIGGER_KEY = 'x';
+
   private scene: THREE.Scene
   private camera: THREE.Camera
   private renderer: THREE.WebGLRenderer
@@ -53,6 +56,10 @@ export class Engine {
 
     this.addEventListeners()
 
+    this.initializeRandomHeight()
+  }
+
+  private iterate() {
     this.initializeRandomHeight()
   }
 
@@ -126,6 +133,14 @@ export class Engine {
 
   private addEventListeners() {
     window.addEventListener('mouseup', (e) => { this.handleClick(e) } , false );
+    window.addEventListener('keyup', (e) => { this.handleKeyUp(e) } , false );
+  }
+
+  private handleKeyUp( event ) {
+    const { key } = event;
+    if(key.toLowerCase() == this.ITERATION_TRIGGER_KEY) {
+      this.iterate()
+    }
   }
 
   private handleClick( event ) {

@@ -111,28 +111,26 @@ var Engine = function () {
         document.body.appendChild(this.renderer.domElement);
         // Instantiate controls.
         this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
+        // Instantiate raycaster.
+        this.raycaster = new THREE.Raycaster();
         var geometry = new THREE.PlaneGeometry(100, 100, this.ROWS, this.COLUMNS);
         var material = new THREE.MeshBasicMaterial({
             color: 0x333333,
             wireframe: true
         });
         var plane = new THREE.Mesh(geometry, material);
-        this.geometry = plane.geometry;
         plane.position.z = 20;
+        this.planeUUID = plane.uuid;
+        this.geometry = plane.geometry;
         this.scene.add(plane);
         var axes = new THREE.AxisHelper(100);
         this.scene.add(axes);
         this.animate();
         this.updateGeometry();
+        this.addEventListeners();
     }
 
     _createClass(Engine, [{
-        key: "render",
-        value: function render() {
-            this.controls.update();
-            this.renderer.render(this.scene, this.camera);
-        }
-    }, {
         key: "animate",
         value: function animate() {
             var _this = this;
@@ -140,13 +138,46 @@ var Engine = function () {
             requestAnimationFrame(function () {
                 _this.animate();
             });
-            this.render();
+            this.controls.update();
+            this.renderer.render(this.scene, this.camera);
         }
     }, {
         key: "updateGeometry",
         value: function updateGeometry() {
             this.geometry.vertices[0].z = 50;
             this.geometry.verticesNeedUpdate = true;
+        }
+    }, {
+        key: "addEventListeners",
+        value: function addEventListeners() {
+            var _this2 = this;
+
+            window.addEventListener('mouseup', function (e) {
+                _this2.click(e);
+            }, false);
+        }
+    }, {
+        key: "click",
+        value: function click(event) {
+            var _this3 = this;
+
+            // calculate mouse position in normalized device coordinates
+            // (-1 to +1) for both components
+            var x = event.clientX / window.innerWidth * 2 - 1;
+            var y = -(event.clientY / window.innerHeight) * 2 + 1;
+            var mouse = { x: x, y: y };
+            this.raycaster.setFromCamera(mouse, this.camera);
+            var intersects = this.raycaster.intersectObjects(this.scene.children);
+            var planeIntersect = intersects.find(function (intersect) {
+                return intersect.object.uuid === _this3.planeUUID;
+            });
+            if (planeIntersect) {
+                var _planeIntersect$point = planeIntersect.point,
+                    _x = _planeIntersect$point.x,
+                    _y = _planeIntersect$point.y;
+
+                console.log('x: ' + _x + 'y: ' + _y);
+            }
         }
     }]);
 

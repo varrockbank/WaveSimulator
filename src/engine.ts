@@ -9,6 +9,8 @@ export class Engine {
   private readonly CELL_HEIGHT = this.PLANE_HEIGHT / this.ROWS
   private readonly CELL_WIDTH = this.PLANE_WIDTH / this.COLUMNS
 
+  private heightMap: number[][];
+
   // Key press to trigger a simulation cycle.
   private readonly ITERATION_TRIGGER_KEY = 'x';
 
@@ -56,6 +58,7 @@ export class Engine {
 
     this.addEventListeners()
 
+    this.initializeHeightMap()
     this.initializeRandomHeight()
   }
 
@@ -68,13 +71,16 @@ export class Engine {
     return  Math.floor(3 * Math.random()) - 1
   }
 
-  private initializeRandomHeight() {
-    const rows = 1;
+  private initializeHeightMap() {
     const heightMap = new Array(this.ROWS+1);
     for(let i = 0 ; i < heightMap.length; i++) {
-      heightMap[i] = (new Array(this.COLUMNS + 1))
+      heightMap[i] = (new Array(this.COLUMNS + 1)).fill(0)
     }
+    this.heightMap = heightMap
+  }
 
+  private initializeRandomHeight() {
+    const heightMap = this.heightMap
     // Seed the first cell.
     heightMap[0][0] = Math.floor(5 * Math.random());
     // Random walk along first row.

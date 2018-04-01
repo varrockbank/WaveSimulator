@@ -29,6 +29,7 @@ export class Engine {
   // Key press to trigger a simulation cycle.
   private readonly ITERATION_TRIGGER_KEY = 'x';
   private readonly AUTOMATIC_TRIGGER_KEY = 'y';
+  private readonly RANDOM_WALK_TRIGGER_KEY = 'z';
 
   private scene: THREE.Scene
   private camera: THREE.Camera
@@ -266,6 +267,9 @@ export class Engine {
     }
     if(key.toLowerCase() == this.AUTOMATIC_TRIGGER_KEY) {
       setInterval(() => { this.iterate() }, 100)
+    }
+    if(key.toLowerCase() == this.RANDOM_WALK_TRIGGER_KEY) {
+      this.initializeRandomHeight()
     }
   }
 

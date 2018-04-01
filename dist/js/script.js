@@ -112,6 +112,7 @@ var Engine = function () {
         // Key press to trigger a simulation cycle.
         this.ITERATION_TRIGGER_KEY = 'x';
         this.AUTOMATIC_TRIGGER_KEY = 'y';
+        this.RANDOM_WALK_TRIGGER_KEY = 'z';
         // Instance Scene.
         this.scene = new THREE.Scene();
         // Instantiate Camera.
@@ -349,6 +350,9 @@ var Engine = function () {
                 setInterval(function () {
                     _this3.iterate();
                 }, 100);
+            }
+            if (key.toLowerCase() == this.RANDOM_WALK_TRIGGER_KEY) {
+                this.initializeRandomHeight();
             }
         }
     }, {

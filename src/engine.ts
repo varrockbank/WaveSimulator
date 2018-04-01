@@ -9,13 +9,15 @@ export class Engine {
   private camera: THREE.Camera
   private renderer: THREE.WebGLRenderer
   private controls: THREE.OrbitControls
+  
+  private geometry: THREE.Geometry;
 
   constructor () {
     // Instance Scene.
     this.scene = new THREE.Scene()
     // Instantiate Camera.
     this.camera = new THREE.PerspectiveCamera(80, this.width / this.height, 1, 1000)
-    this.camera.position.set(0, -70, 30)
+    this.camera.position.set(0, -70, 50)
     // Instantiate render.
     this.renderer = new THREE.WebGLRenderer()
     this.renderer.setClearColor( 0xFFFFFF )
@@ -30,17 +32,25 @@ export class Engine {
         wireframe: true
     })
     const plane = new THREE.Mesh(geometry, material)
+    this.geometry = plane.geometry as THREE.Geometry;
+    plane.position.z = 20
     this.scene.add(plane)
-
-    const  axes = new THREE.AxisHelper(100)
+    
+    const axes = new THREE.AxisHelper(100)
     this.scene.add(axes)
 
-    this.render()
+    this.animate()
+    this.updateGeometry()
   }
 
-  private render() {
+  private animate() {
+    requestAnimationFrame(() => { this.animate() })
     this.controls.update()
-    requestAnimationFrame(() => {this.render() })
     this.renderer.render(this.scene, this.camera)
+  }
+
+  private updateGeometry() {
+    this.geometry.vertices[0].z = 50;
+    this.geometry.verticesNeedUpdate = true;
   }
 }

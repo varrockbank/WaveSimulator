@@ -103,7 +103,7 @@ var Engine = function () {
         this.scene = new THREE.Scene();
         // Instantiate Camera.
         this.camera = new THREE.PerspectiveCamera(80, this.width / this.height, 1, 1000);
-        this.camera.position.set(0, -70, 30);
+        this.camera.position.set(0, -70, 50);
         // Instantiate render.
         this.renderer = new THREE.WebGLRenderer();
         this.renderer.setClearColor(0xFFFFFF);
@@ -117,22 +117,36 @@ var Engine = function () {
             wireframe: true
         });
         var plane = new THREE.Mesh(geometry, material);
+        this.geometry = plane.geometry;
+        plane.position.z = 20;
         this.scene.add(plane);
         var axes = new THREE.AxisHelper(100);
         this.scene.add(axes);
-        this.render();
+        this.animate();
+        this.updateGeometry();
     }
 
     _createClass(Engine, [{
         key: "render",
         value: function render() {
+            this.controls.update();
+            this.renderer.render(this.scene, this.camera);
+        }
+    }, {
+        key: "animate",
+        value: function animate() {
             var _this = this;
 
-            this.controls.update();
             requestAnimationFrame(function () {
-                _this.render();
+                _this.animate();
             });
-            this.renderer.render(this.scene, this.camera);
+            this.render();
+        }
+    }, {
+        key: "updateGeometry",
+        value: function updateGeometry() {
+            this.geometry.vertices[0].z = 50;
+            this.geometry.verticesNeedUpdate = true;
         }
     }]);
 

@@ -18,15 +18,15 @@ export interface Epicenter {
  */
 export class Wave {
   private stage = 0
-  private states = {
-    0: [
+  private states = [
+    [
       {
         x_offset: 0,
         y_offset: 0,
         z: 10
       },
     ],
-    1: [
+    [
       {
         x_offset: -1,
         y_offset: 0,
@@ -48,7 +48,7 @@ export class Wave {
         z: 5
       },
     ],
-    2: [
+    [
       {
         x_offset: -1,
         y_offset: -1,
@@ -70,7 +70,7 @@ export class Wave {
         z: 3
       }
     ],
-    3: [
+    [
       {
         x_offset: -1,
         y_offset: -2,
@@ -113,9 +113,12 @@ export class Wave {
         z: 1
       },
     ],
-  }
+  ]
+  private numStates: number;
 
-  constructor(private readonly epicenter: Epicenter) {}
+  constructor(private readonly epicenter: Epicenter) {
+    this.numStates = this.states.length
+  }
 
   getPoints() {
     const {x, y} = this.epicenter
@@ -129,7 +132,11 @@ export class Wave {
     })
   }
 
-  step() {
+  /**
+   * @return Whether reached end of lifecycle.
+   */
+  step(): boolean {
     this.stage++
+    return this.stage >= this.numStates
   }
 }

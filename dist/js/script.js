@@ -114,6 +114,7 @@ var Engine = function () {
         this.ITERATION_TRIGGER_KEY = 'x';
         this.AUTOMATIC_TRIGGER_KEY = 'y';
         this.RANDOM_WALK_TRIGGER_KEY = 'z';
+        this.waves = [];
         // Instance Scene.
         this.scene = new THREE.Scene();
         // Instantiate Camera.
@@ -259,8 +260,10 @@ var Engine = function () {
                     }
                 }
             }
-            if (this.wave) {
-                var points = this.wave.getPoints();
+            var numWaves = this.waves.length;
+            while (numWaves--) {
+                var wave = this.waves[numWaves];
+                var points = wave.getPoints();
                 for (var _i7 = 0; _i7 < points.length; _i7++) {
                     var _points$_i = points[_i7],
                         _x = _points$_i.x,
@@ -274,7 +277,10 @@ var Engine = function () {
                         this.updateGeometry(_verticeIndex, aggregate);
                     }
                 }
-                this.wave.step();
+                // State step wave, removing from collection if reached end of lifecycle.
+                if (wave.step()) {
+                    this.waves.splice(numWaves, 1);
+                }
             }
             this.refreshGeometry();
         }
@@ -421,7 +427,7 @@ var Engine = function () {
 
                 var columnIndex = Math.round(_x2 / this.CELL_WIDTH) + this.COLUMNS / 2;
                 var rowIndex = -1 * Math.round(_y / this.CELL_HEIGHT) + this.ROWS / 2;
-                this.wave = new wave_1.Wave({ x: columnIndex, y: rowIndex });
+                this.waves.push(new wave_1.Wave({ x: columnIndex, y: rowIndex }));
                 this.iterate();
                 // const points = this.getRasterizedCircle({x: rowIndex, y: columnIndex})
                 // points.filter(({x, y}) => x >= 0 && x < this.COLUMNS && y >= 0 && y <= this.ROWS)
@@ -532,80 +538,76 @@ var Wave = function () {
 
         this.epicenter = epicenter;
         this.stage = 0;
-        this.states = {
-            0: [{
-                x_offset: 0,
-                y_offset: 0,
-                z: 10
-            }],
-            1: [{
-                x_offset: -1,
-                y_offset: 0,
-                z: 5
-            }, {
-                x_offset: 1,
-                y_offset: 0,
-                z: 5
-            }, {
-                x_offset: 0,
-                y_offset: 1,
-                z: 5
-            }, {
-                x_offset: 0,
-                y_offset: -1,
-                z: 5
-            }],
-            2: [{
-                x_offset: -1,
-                y_offset: -1,
-                z: 3
-            }, {
-                x_offset: 1,
-                y_offset: 1,
-                z: 3
-            }, {
-                x_offset: -1,
-                y_offset: 1,
-                z: 3
-            }, {
-                x_offset: 1,
-                y_offset: -1,
-                z: 3
-            }],
-            3: [{
-                x_offset: -1,
-                y_offset: -2,
-                z: 1
-            }, {
-                x_offset: 1,
-                y_offset: -2,
-                z: 1
-            }, {
-                x_offset: -1,
-                y_offset: 2,
-                z: 1
-            }, {
-                x_offset: 1,
-                y_offset: 2,
-                z: 1
-            }, {
-                x_offset: -2,
-                y_offset: -1,
-                z: 1
-            }, {
-                x_offset: -2,
-                y_offset: 1,
-                z: 1
-            }, {
-                x_offset: 2,
-                y_offset: -1,
-                z: 1
-            }, {
-                x_offset: 2,
-                y_offset: 1,
-                z: 1
-            }]
-        };
+        this.states = [[{
+            x_offset: 0,
+            y_offset: 0,
+            z: 10
+        }], [{
+            x_offset: -1,
+            y_offset: 0,
+            z: 5
+        }, {
+            x_offset: 1,
+            y_offset: 0,
+            z: 5
+        }, {
+            x_offset: 0,
+            y_offset: 1,
+            z: 5
+        }, {
+            x_offset: 0,
+            y_offset: -1,
+            z: 5
+        }], [{
+            x_offset: -1,
+            y_offset: -1,
+            z: 3
+        }, {
+            x_offset: 1,
+            y_offset: 1,
+            z: 3
+        }, {
+            x_offset: -1,
+            y_offset: 1,
+            z: 3
+        }, {
+            x_offset: 1,
+            y_offset: -1,
+            z: 3
+        }], [{
+            x_offset: -1,
+            y_offset: -2,
+            z: 1
+        }, {
+            x_offset: 1,
+            y_offset: -2,
+            z: 1
+        }, {
+            x_offset: -1,
+            y_offset: 2,
+            z: 1
+        }, {
+            x_offset: 1,
+            y_offset: 2,
+            z: 1
+        }, {
+            x_offset: -2,
+            y_offset: -1,
+            z: 1
+        }, {
+            x_offset: -2,
+            y_offset: 1,
+            z: 1
+        }, {
+            x_offset: 2,
+            y_offset: -1,
+            z: 1
+        }, {
+            x_offset: 2,
+            y_offset: 1,
+            z: 1
+        }]];
+        this.numStates = this.states.length;
     }
 
     _createClass(Wave, [{
@@ -624,10 +626,15 @@ var Wave = function () {
                 };
             });
         }
+        /**
+         * @return Whether reached end of lifecycle.
+         */
+
     }, {
         key: "step",
         value: function step() {
             this.stage++;
+            return this.stage >= this.numStates;
         }
     }]);
 

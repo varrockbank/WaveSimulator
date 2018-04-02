@@ -42,7 +42,7 @@ export class Engine {
   private planeUUID: string
   private geometry: THREE.Geometry
 
-  private wave: Wave
+  private waves: Wave[] = []
 
   constructor () {
     // Instance Scene.
@@ -203,8 +203,10 @@ export class Engine {
       }
     }
 
-    if(this.wave) {
-      const points = this.wave.getPoints()
+    let numWaves = this.waves.length
+    while(numWaves--) {
+      const wave = this.waves[numWaves]
+      const points = wave.getPoints()
       for(let i = 0 ; i < points.length; i++) {
         const {x, y, z} = points[i]
         const verticeIndex = this.getVerticeIndex(y, x)
@@ -214,8 +216,12 @@ export class Engine {
           this.updateGeometry(verticeIndex, aggregate)
         }
       }
-      this.wave.step()
+      // State step wave, removing from collection if reached end of lifecycle.
+      if(wave.step()) {
+        this.waves.splice(numWaves, 1)
+      }
     }
+
     this.refreshGeometry()
   }
 
@@ -338,7 +344,7 @@ export class Engine {
       // These are sequenced to match the vertices indexing.
       const columnIndex = Math.round(x / this.CELL_WIDTH) + (this.COLUMNS / 2);
       const rowIndex = -1 * Math.round(y / this.CELL_HEIGHT) + (this.ROWS / 2);
-      this.wave = new Wave({x: columnIndex, y: rowIndex})
+      this.waves.push( new Wave({x: columnIndex, y: rowIndex}) )
 
       this.iterate()
       // const points = this.getRasterizedCircle({x: rowIndex, y: columnIndex})

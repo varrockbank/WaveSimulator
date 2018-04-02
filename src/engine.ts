@@ -80,8 +80,8 @@ export class Engine {
 
     this.addEventListeners()
 
-    this.initializeHeightMap()
-    this.initializeRandomHeight()
+    this.initSpringModel()
+    this.initRandomHeightmap()
 
     this.renderer.gammaInput = true
     this.renderer.gammaOutput = true
@@ -113,6 +113,49 @@ export class Engine {
   }
 
   private iterate() {
+    this.updateSpringModel()
+    this.updatePropgationModel()
+
+    this.applyHeightmapToGeometry()
+    this.applyWavesToGeometry()
+
+    this.digestGeometry()
+  }
+
+  private applyHeightmapToGeometry() {
+    const heightMap = this.heightMap
+    for(let i = 0 ; i < heightMap.length; i++) {
+      const rowHeight = heightMap[i]
+      for(let j = 0 ; j < rowHeight.length; j++) {
+        const height = this.heightMap[i][j]
+        const verticeIndex = this.getVerticeIndex(i, j)
+        this.updateVertex(verticeIndex, height)
+      }
+    }
+  }
+
+  private applyWavesToGeometry() {
+    let numWaves = this.waves.length
+    while(numWaves--) {
+      const wave = this.waves[numWaves]
+      const points = wave.getPoints()
+      for(let i = 0 ; i < points.length; i++) {
+        const {x, y, z} = points[i]
+        const verticeIndex = this.getVerticeIndex(y, x)
+        if(verticeIndex >= 0) {
+          const currHeight = this.heightMap[y][x]
+          const aggregate = z + currHeight
+          this.updateVertex(verticeIndex, aggregate)
+        }
+      }
+      // State step wave, removing from collection if reached end of lifecycle.
+      if(wave.step()) {
+        this.waves.splice(numWaves, 1)
+      }
+    }
+  }
+
+  private updateSpringModel() {
     const heightMap = this.heightMap
     const velocityMap = this.velocityMap
     for(let i = 0 ; i < heightMap.length; i++) {
@@ -128,10 +171,13 @@ export class Engine {
         const acceleration = (-1 * this.K * x) - ( this.D * velocity)
         rowVelocity[j] += this.roundDecimal(acceleration)
         rowVelocity[j] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(rowVelocity[j]))
-        const verticeIndex = this.getVerticeIndex(i, j)
-        this.updateGeometry(verticeIndex, height)
       }
     }
+  }
+
+  private updatePropgationModel() {
+    const heightMap = this.heightMap
+    const velocityMap = this.velocityMap
 
     const leftDelta = new Array(this.ROWS + 1);
     const rightDelta = new Array(this.ROWS + 1);
@@ -202,27 +248,6 @@ export class Engine {
         }
       }
     }
-
-    let numWaves = this.waves.length
-    while(numWaves--) {
-      const wave = this.waves[numWaves]
-      const points = wave.getPoints()
-      for(let i = 0 ; i < points.length; i++) {
-        const {x, y, z} = points[i]
-        const verticeIndex = this.getVerticeIndex(y, x)
-        if(verticeIndex >= 0) {
-          const currHeight = this.heightMap[y][x]
-          const aggregate = z + currHeight
-          this.updateGeometry(verticeIndex, aggregate)
-        }
-      }
-      // State step wave, removing from collection if reached end of lifecycle.
-      if(wave.step()) {
-        this.waves.splice(numWaves, 1)
-      }
-    }
-
-    this.refreshGeometry()
   }
 
   /** Return -1, 0, 1 */
@@ -234,7 +259,7 @@ export class Engine {
     return Math.round(num * 10000) / 10000
   }
 
-  private initializeHeightMap() {
+  private initSpringModel() {
     const heightMap = new Array(this.ROWS+1);
     for(let i = 0 ; i < heightMap.length; i++) {
       heightMap[i] = (new Array(this.COLUMNS + 1)).fill(0)
@@ -248,7 +273,7 @@ export class Engine {
     this.velocityMap = velocityMap
   }
 
-  private initializeRandomHeight() {
+  private initRandomHeightmap() {
     const heightMap = this.heightMap
     // Seed the first cell.
     heightMap[0][0] = Math.floor(5 * Math.random()) * this.getRandomDirection()
@@ -281,11 +306,11 @@ export class Engine {
       for(let j = 0 ; j < row.length; j++) {
         const height = row[j]
         const verticeIndex = this.getVerticeIndex(i, j)
-        this.updateGeometry(verticeIndex, height)
+        this.updateVertex(verticeIndex, height)
       }
     }
 
-    this.refreshGeometry()
+    this.digestGeometry()
   }
 
   private animate() {
@@ -294,7 +319,7 @@ export class Engine {
     this.renderer.render(this.scene, this.camera)
   }
 
-  private updateGeometry(verticeIndex, height?) {
+  private updateVertex(verticeIndex, height?) {
     if(height != undefined && height != null) {
       this.geometry.vertices[verticeIndex].z = height;
     } else {
@@ -302,7 +327,7 @@ export class Engine {
     }
   }
 
-  private refreshGeometry() {
+  private digestGeometry() {
     this.geometry.verticesNeedUpdate = true;
   }
 
@@ -320,7 +345,7 @@ export class Engine {
       setInterval(() => { this.iterate() }, 100)
     }
     if(key.toLowerCase() == this.RANDOM_WALK_TRIGGER_KEY) {
-      this.initializeRandomHeight()
+      this.initRandomHeightmap()
     }
   }
 

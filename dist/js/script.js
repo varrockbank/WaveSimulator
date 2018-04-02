@@ -144,8 +144,8 @@ var Engine = function () {
         this.scene.add(axes);
         this.animate();
         this.addEventListeners();
-        this.initializeHeightMap();
-        this.initializeRandomHeight();
+        this.initSpringModel();
+        this.initRandomHeightmap();
         this.renderer.gammaInput = true;
         this.renderer.gammaOutput = true;
         this.renderer.shadowMap.enabled = true;
@@ -175,6 +175,54 @@ var Engine = function () {
     _createClass(Engine, [{
         key: "iterate",
         value: function iterate() {
+            this.updateSpringModel();
+            this.updatePropgationModel();
+            this.applyHeightmapToGeometry();
+            this.applyWavesToGeometry();
+            this.digestGeometry();
+        }
+    }, {
+        key: "applyHeightmapToGeometry",
+        value: function applyHeightmapToGeometry() {
+            var heightMap = this.heightMap;
+            for (var i = 0; i < heightMap.length; i++) {
+                var rowHeight = heightMap[i];
+                for (var j = 0; j < rowHeight.length; j++) {
+                    var height = this.heightMap[i][j];
+                    var verticeIndex = this.getVerticeIndex(i, j);
+                    this.updateVertex(verticeIndex, height);
+                }
+            }
+        }
+    }, {
+        key: "applyWavesToGeometry",
+        value: function applyWavesToGeometry() {
+            var numWaves = this.waves.length;
+            while (numWaves--) {
+                var wave = this.waves[numWaves];
+                var points = wave.getPoints();
+                for (var i = 0; i < points.length; i++) {
+                    var _points$i = points[i],
+                        x = _points$i.x,
+                        y = _points$i.y,
+                        z = _points$i.z;
+
+                    var verticeIndex = this.getVerticeIndex(y, x);
+                    if (verticeIndex >= 0) {
+                        var currHeight = this.heightMap[y][x];
+                        var aggregate = z + currHeight;
+                        this.updateVertex(verticeIndex, aggregate);
+                    }
+                }
+                // State step wave, removing from collection if reached end of lifecycle.
+                if (wave.step()) {
+                    this.waves.splice(numWaves, 1);
+                }
+            }
+        }
+    }, {
+        key: "updateSpringModel",
+        value: function updateSpringModel() {
             var heightMap = this.heightMap;
             var velocityMap = this.velocityMap;
             for (var i = 0; i < heightMap.length; i++) {
@@ -189,100 +237,81 @@ var Engine = function () {
                     var acceleration = -1 * this.K * x - this.D * velocity;
                     rowVelocity[j] += this.roundDecimal(acceleration);
                     rowVelocity[j] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(rowVelocity[j]));
-                    var verticeIndex = this.getVerticeIndex(i, j);
-                    this.updateGeometry(verticeIndex, height);
                 }
             }
+        }
+    }, {
+        key: "updatePropgationModel",
+        value: function updatePropgationModel() {
+            var heightMap = this.heightMap;
+            var velocityMap = this.velocityMap;
             var leftDelta = new Array(this.ROWS + 1);
             var rightDelta = new Array(this.ROWS + 1);
-            for (var _i = 0; _i < this.ROWS + 1; _i++) {
-                leftDelta[_i] = new Array(this.COLUMNS + 1).fill(0);
-                rightDelta[_i] = new Array(this.COLUMNS + 1).fill(0);
+            for (var i = 0; i < this.ROWS + 1; i++) {
+                leftDelta[i] = new Array(this.COLUMNS + 1).fill(0);
+                rightDelta[i] = new Array(this.COLUMNS + 1).fill(0);
             }
             for (var l = 0; l < this.BACK_PROPAGATIONS; l++) {
-                for (var _i2 = 0; _i2 < heightMap.length; _i2++) {
-                    var _rowHeight = heightMap[_i2];
-                    var _rowVelocity = velocityMap[_i2];
-                    for (var _j = 1; _j < _rowHeight.length; _j++) {
-                        leftDelta[_i2][_j] = this.roundDecimal(this.S * (_rowHeight[_j] - _rowHeight[_j - 1]));
-                        _rowVelocity[_j] += leftDelta[_i2][_j];
-                        if (_rowVelocity[_j] < 0) {
-                            _rowVelocity[_j] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(_rowVelocity[_j]));
-                        } else if (_rowVelocity[_j] > 0) {
-                            _rowVelocity[_j] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(_rowVelocity[_j]));
+                for (var _i = 0; _i < heightMap.length; _i++) {
+                    var rowHeight = heightMap[_i];
+                    var rowVelocity = velocityMap[_i];
+                    for (var j = 1; j < rowHeight.length; j++) {
+                        leftDelta[_i][j] = this.roundDecimal(this.S * (rowHeight[j] - rowHeight[j - 1]));
+                        rowVelocity[j] += leftDelta[_i][j];
+                        if (rowVelocity[j] < 0) {
+                            rowVelocity[j] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(rowVelocity[j]));
+                        } else if (rowVelocity[j] > 0) {
+                            rowVelocity[j] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(rowVelocity[j]));
                         }
                     }
-                    for (var _j2 = 0; _j2 < _rowHeight.length - 1; _j2++) {
-                        rightDelta[_i2][_j2] = this.roundDecimal(this.S * (_rowHeight[_j2] - _rowHeight[_j2 + 1]));
-                        _rowVelocity[_j2] += rightDelta[_i2][_j2];
-                        if (_rowVelocity[_j2] < 0) {
-                            _rowVelocity[_j2] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(_rowVelocity[_j2]));
-                        } else if (_rowVelocity[_j2] > 0) {
-                            _rowVelocity[_j2] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(_rowVelocity[_j2]));
+                    for (var _j = 0; _j < rowHeight.length - 1; _j++) {
+                        rightDelta[_i][_j] = this.roundDecimal(this.S * (rowHeight[_j] - rowHeight[_j + 1]));
+                        rowVelocity[_j] += rightDelta[_i][_j];
+                        if (rowVelocity[_j] < 0) {
+                            rowVelocity[_j] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(rowVelocity[_j]));
+                        } else if (rowVelocity[_j] > 0) {
+                            rowVelocity[_j] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(rowVelocity[_j]));
                         }
                     }
                 }
-                for (var _i3 = 0; _i3 < heightMap.length; _i3++) {
-                    var _rowHeight2 = heightMap[_i3];
-                    for (var _j3 = 1; _j3 < _rowHeight2.length; _j3++) {
-                        heightMap[_i3][_j3 - 1] += leftDelta[_i3][_j3];
+                for (var _i2 = 0; _i2 < heightMap.length; _i2++) {
+                    var _rowHeight = heightMap[_i2];
+                    for (var _j2 = 1; _j2 < _rowHeight.length; _j2++) {
+                        heightMap[_i2][_j2 - 1] += leftDelta[_i2][_j2];
                     }
-                    for (var _j4 = 0; _j4 < _rowHeight2.length - 1; _j4++) {
-                        heightMap[_i3][_j4 + 1] += rightDelta[_i3][_j4];
+                    for (var _j3 = 0; _j3 < _rowHeight.length - 1; _j3++) {
+                        heightMap[_i2][_j3 + 1] += rightDelta[_i2][_j3];
                     }
                 }
             }
             var topDelta = new Array(this.COLUMNS + 1);
             var bottomDelta = new Array(this.COLUMNS + 1);
-            for (var _i4 = 0; _i4 < this.COLUMNS + 1; _i4++) {
-                topDelta[_i4] = new Array(this.ROWS + 1).fill(0);
-                bottomDelta[_i4] = new Array(this.ROWS + 1).fill(0);
+            for (var _i3 = 0; _i3 < this.COLUMNS + 1; _i3++) {
+                topDelta[_i3] = new Array(this.ROWS + 1).fill(0);
+                bottomDelta[_i3] = new Array(this.ROWS + 1).fill(0);
             }
             for (var _l = 0; _l < this.BACK_PROPAGATIONS; _l++) {
-                for (var _j5 = 0; _j5 < heightMap[0].length; _j5++) {
-                    for (var _i5 = 1; _i5 < heightMap.length; _i5++) {
-                        topDelta[_i5][_j5] = this.roundDecimal(this.S * (heightMap[_i5][_j5] - heightMap[_i5 - 1][_j5]));
-                        velocityMap[_i5][_j5] += topDelta[_i5][_j5];
-                        if (velocityMap[_i5][_j5] < 0) {
-                            velocityMap[_i5][_j5] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[_i5][_j5]));
-                        } else if (velocityMap[_i5][_j5] > 0) {
-                            velocityMap[_i5][_j5] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[_i5][_j5]));
+                for (var _j4 = 0; _j4 < heightMap[0].length; _j4++) {
+                    for (var _i4 = 1; _i4 < heightMap.length; _i4++) {
+                        topDelta[_i4][_j4] = this.roundDecimal(this.S * (heightMap[_i4][_j4] - heightMap[_i4 - 1][_j4]));
+                        velocityMap[_i4][_j4] += topDelta[_i4][_j4];
+                        if (velocityMap[_i4][_j4] < 0) {
+                            velocityMap[_i4][_j4] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[_i4][_j4]));
+                        } else if (velocityMap[_i4][_j4] > 0) {
+                            velocityMap[_i4][_j4] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[_i4][_j4]));
                         }
                     }
-                    for (var _i6 = 0; _i6 < heightMap.length - 1; _i6++) {
-                        bottomDelta[_i6][_j5] = this.S * (heightMap[_i6][_j5] - heightMap[_i6 + 1][_j5]);
-                        velocityMap[_i6][_j5] += bottomDelta[_i6][_j5];
-                        if (velocityMap[_i6][_j5] < 0) {
-                            velocityMap[_i6][_j5] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[_i6][_j5]));
-                        } else if (velocityMap[_i6][_j5] > 0) {
-                            velocityMap[_i6][_j5] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[_i6][_j5]));
+                    for (var _i5 = 0; _i5 < heightMap.length - 1; _i5++) {
+                        bottomDelta[_i5][_j4] = this.S * (heightMap[_i5][_j4] - heightMap[_i5 + 1][_j4]);
+                        velocityMap[_i5][_j4] += bottomDelta[_i5][_j4];
+                        if (velocityMap[_i5][_j4] < 0) {
+                            velocityMap[_i5][_j4] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[_i5][_j4]));
+                        } else if (velocityMap[_i5][_j4] > 0) {
+                            velocityMap[_i5][_j4] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[_i5][_j4]));
                         }
                     }
                 }
             }
-            var numWaves = this.waves.length;
-            while (numWaves--) {
-                var wave = this.waves[numWaves];
-                var points = wave.getPoints();
-                for (var _i7 = 0; _i7 < points.length; _i7++) {
-                    var _points$_i = points[_i7],
-                        _x = _points$_i.x,
-                        y = _points$_i.y,
-                        z = _points$_i.z;
-
-                    var _verticeIndex = this.getVerticeIndex(y, _x);
-                    if (_verticeIndex >= 0) {
-                        var currHeight = this.heightMap[y][_x];
-                        var aggregate = z + currHeight;
-                        this.updateGeometry(_verticeIndex, aggregate);
-                    }
-                }
-                // State step wave, removing from collection if reached end of lifecycle.
-                if (wave.step()) {
-                    this.waves.splice(numWaves, 1);
-                }
-            }
-            this.refreshGeometry();
         }
         /** Return -1, 0, 1 */
 
@@ -297,22 +326,22 @@ var Engine = function () {
             return Math.round(num * 10000) / 10000;
         }
     }, {
-        key: "initializeHeightMap",
-        value: function initializeHeightMap() {
+        key: "initSpringModel",
+        value: function initSpringModel() {
             var heightMap = new Array(this.ROWS + 1);
             for (var i = 0; i < heightMap.length; i++) {
                 heightMap[i] = new Array(this.COLUMNS + 1).fill(0);
             }
             this.heightMap = heightMap;
             var velocityMap = new Array(this.ROWS + 1);
-            for (var _i8 = 0; _i8 < velocityMap.length; _i8++) {
-                velocityMap[_i8] = new Array(this.COLUMNS + 1).fill(0);
+            for (var _i6 = 0; _i6 < velocityMap.length; _i6++) {
+                velocityMap[_i6] = new Array(this.COLUMNS + 1).fill(0);
             }
             this.velocityMap = velocityMap;
         }
     }, {
-        key: "initializeRandomHeight",
-        value: function initializeRandomHeight() {
+        key: "initRandomHeightmap",
+        value: function initRandomHeightmap() {
             var heightMap = this.heightMap;
             // Seed the first cell.
             heightMap[0][0] = Math.floor(5 * Math.random()) * this.getRandomDirection();
@@ -329,24 +358,24 @@ var Engine = function () {
                 heightMap[i][0] = _height;
             }
             // Loop over inner rows, assigning height as +-1 from midpoint of top and left neighbor
-            for (var _j6 = 1; _j6 < this.COLUMNS + 1; _j6++) {
-                for (var _i9 = 1; _i9 < this.ROWS + 1; _i9++) {
-                    var topNeighbor = heightMap[_i9 - 1][_j6];
-                    var leftNeighbor = heightMap[_i9][_j6 - 1];
+            for (var _j5 = 1; _j5 < this.COLUMNS + 1; _j5++) {
+                for (var _i7 = 1; _i7 < this.ROWS + 1; _i7++) {
+                    var topNeighbor = heightMap[_i7 - 1][_j5];
+                    var leftNeighbor = heightMap[_i7][_j5 - 1];
                     var midpoint = (topNeighbor + leftNeighbor) / 2;
-                    heightMap[_i9][_j6] = Math.round(midpoint) + this.getRandomDirection();
+                    heightMap[_i7][_j5] = Math.round(midpoint) + this.getRandomDirection();
                 }
             }
             // Map heightMap to geometry
-            for (var _i10 = 0; _i10 < heightMap.length; _i10++) {
-                var row = heightMap[_i10];
-                for (var _j7 = 0; _j7 < row.length; _j7++) {
-                    var _height2 = row[_j7];
-                    var verticeIndex = this.getVerticeIndex(_i10, _j7);
-                    this.updateGeometry(verticeIndex, _height2);
+            for (var _i8 = 0; _i8 < heightMap.length; _i8++) {
+                var row = heightMap[_i8];
+                for (var _j6 = 0; _j6 < row.length; _j6++) {
+                    var _height2 = row[_j6];
+                    var verticeIndex = this.getVerticeIndex(_i8, _j6);
+                    this.updateVertex(verticeIndex, _height2);
                 }
             }
-            this.refreshGeometry();
+            this.digestGeometry();
         }
     }, {
         key: "animate",
@@ -360,8 +389,8 @@ var Engine = function () {
             this.renderer.render(this.scene, this.camera);
         }
     }, {
-        key: "updateGeometry",
-        value: function updateGeometry(verticeIndex, height) {
+        key: "updateVertex",
+        value: function updateVertex(verticeIndex, height) {
             if (height != undefined && height != null) {
                 this.geometry.vertices[verticeIndex].z = height;
             } else {
@@ -369,8 +398,8 @@ var Engine = function () {
             }
         }
     }, {
-        key: "refreshGeometry",
-        value: function refreshGeometry() {
+        key: "digestGeometry",
+        value: function digestGeometry() {
             this.geometry.verticesNeedUpdate = true;
         }
     }, {
@@ -401,7 +430,7 @@ var Engine = function () {
                 }, 100);
             }
             if (key.toLowerCase() == this.RANDOM_WALK_TRIGGER_KEY) {
-                this.initializeRandomHeight();
+                this.initRandomHeightmap();
             }
         }
     }, {
@@ -421,11 +450,11 @@ var Engine = function () {
             });
             if (planeIntersect) {
                 var _planeIntersect$point = planeIntersect.point,
-                    _x2 = _planeIntersect$point.x,
+                    _x = _planeIntersect$point.x,
                     _y = _planeIntersect$point.y;
                 // These are sequenced to match the vertices indexing.
 
-                var columnIndex = Math.round(_x2 / this.CELL_WIDTH) + this.COLUMNS / 2;
+                var columnIndex = Math.round(_x / this.CELL_WIDTH) + this.COLUMNS / 2;
                 var rowIndex = -1 * Math.round(_y / this.CELL_HEIGHT) + this.ROWS / 2;
                 this.waves.push(new wave_1.Wave({ x: columnIndex, y: rowIndex }));
                 this.iterate();

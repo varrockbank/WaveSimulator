@@ -26,6 +26,13 @@ export class Engine {
 
   private heightMap: number[][]
   private velocityMap: number[][]
+  
+  private propagationModelBuffers: {
+    leftDelta: number[][],
+    rightDelta: number[][],
+    topDelta: number[][],
+    bottomDelta: number[][],
+  }
 
   // Key press to trigger a simulation cycle.
   private readonly ITERATION_TRIGGER_KEY = 'x';
@@ -81,6 +88,7 @@ export class Engine {
     this.addEventListeners()
 
     this.initSpringModel()
+    this.initPropagationModel()
     this.initRandomHeightmap()
 
     this.renderer.gammaInput = true
@@ -179,18 +187,30 @@ export class Engine {
     const heightMap = this.heightMap
     const velocityMap = this.velocityMap
 
-    const leftDelta = new Array(this.ROWS + 1);
-    const rightDelta = new Array(this.ROWS + 1);
+    const {
+      leftDelta,
+      rightDelta,
+      topDelta,
+      bottomDelta,
+    } = this.propagationModelBuffers
+    // Clear deltas.
     for(let i = 0 ; i < this.ROWS + 1; i++) {
-      leftDelta[i] = (new Array(this.COLUMNS + 1)).fill(0)
-      rightDelta[i] = (new Array(this.COLUMNS + 1)).fill(0)
+      leftDelta[i] = leftDelta[i].fill(0)
+      rightDelta[i] = rightDelta[i].fill(0)
     }
+    for(let i = 0 ; i < this.COLUMNS + 1; i++) {
+      topDelta[i] = topDelta[i].fill(0)
+      bottomDelta[i] = bottomDelta[i].fill(0)
+    }
+
     for(let l = 0 ; l < this.BACK_PROPAGATIONS; l++) {
+      // Horizontal propagation
       for(let i = 0 ; i < heightMap.length; i++) {
-        const rowHeight = heightMap[i]
+        const heightRow = heightMap[i]
         const rowVelocity = velocityMap[i]
-        for(let j = 1; j < rowHeight.length; j++) {
-          leftDelta[i][j] = this.roundDecimal(this.S * (rowHeight[j] - rowHeight[j-1]))
+        // Left velocity propagation.
+        for(let j = 1; j < heightRow.length; j++) {
+          leftDelta[i][j] = this.roundDecimal(this.S * (heightRow[j] - heightRow[j-1]))
           rowVelocity[j] += leftDelta[i][j]
           if(rowVelocity[j] < 0 ) {
             rowVelocity[j] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(rowVelocity[j]))            
@@ -198,8 +218,9 @@ export class Engine {
             rowVelocity[j] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(rowVelocity[j]))
           }
         }
-        for(let j = 0; j < rowHeight.length - 1; j++) {
-          rightDelta[i][j] = this.roundDecimal(this.S * (rowHeight[j] - rowHeight[j+1]))
+        // Right velocity propagation.
+        for(let j = 0; j < heightRow.length - 1; j++) {
+          rightDelta[i][j] = this.roundDecimal(this.S * (heightRow[j] - heightRow[j+1]))
           rowVelocity[j] += rightDelta[i][j]
           if(rowVelocity[j] < 0 ) {
             rowVelocity[j] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(rowVelocity[j]))
@@ -207,26 +228,17 @@ export class Engine {
             rowVelocity[j] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(rowVelocity[j]))
           }
         }
-      }
-
-      for(let i = 0 ; i < heightMap.length; i++) {
-        const rowHeight = heightMap[i]
-        for(let j = 1; j < rowHeight.length; j++) {
+        // Left height propagation
+        for(let j = 1; j < heightRow.length; j++) {
           heightMap[i][j-1] += leftDelta[i][j]
         }
-        for(let j = 0; j < rowHeight.length - 1; j++) {
+        // Right height propagation
+        for(let j = 0; j < heightRow.length - 1; j++) {
           heightMap[i][j+1] += rightDelta[i][j]
         }
       }
-    }
-
-    const topDelta = new Array(this.COLUMNS + 1);
-    const bottomDelta = new Array(this.COLUMNS + 1);
-    for(let i = 0 ; i < this.COLUMNS + 1; i++) {
-      topDelta[i] = (new Array(this.ROWS + 1)).fill(0)
-      bottomDelta[i] = (new Array(this.ROWS + 1)).fill(0)
-    }
-    for(let l = 0 ; l < this.BACK_PROPAGATIONS; l++) {
+      // End Horizontal propagation.
+      // Vertical propagation.
       for(let j = 0 ; j < heightMap[0].length; j++) {
         for(let i = 1; i < heightMap.length; i++) {
           topDelta[i][j] = this.roundDecimal(this.S * ( heightMap[i][j] - heightMap[i-1][j] ))
@@ -246,7 +258,14 @@ export class Engine {
             velocityMap[i][j] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[i][j]))            
           }
         }
+        for(let i = 1; i < heightMap.length; i++) {
+          heightMap[i-1][j] += topDelta[i][j]
+        }
+        for(let i = 0; i < heightMap.length - 1; i++) {
+          heightMap[i+1][j] += bottomDelta[i][j]
+        }
       }
+      // End vertical propagation
     }
   }
 
@@ -270,6 +289,27 @@ export class Engine {
     }
     this.heightMap = heightMap
     this.velocityMap = velocityMap
+  }
+
+  private initPropagationModel() {
+    const leftDelta = new Array(this.ROWS + 1);
+    const rightDelta = new Array(this.ROWS + 1);
+    for(let i = 0 ; i < this.ROWS + 1; i++) {
+      leftDelta[i] = (new Array(this.COLUMNS + 1)).fill(0)
+      rightDelta[i] = (new Array(this.COLUMNS + 1)).fill(0)
+    }
+    const topDelta = new Array(this.COLUMNS + 1);
+    const bottomDelta = new Array(this.COLUMNS + 1);
+    for(let i = 0 ; i < this.COLUMNS + 1; i++) {
+      topDelta[i] = (new Array(this.ROWS + 1)).fill(0)
+      bottomDelta[i] = (new Array(this.ROWS + 1)).fill(0)
+    }
+    this.propagationModelBuffers = {
+      leftDelta,
+      rightDelta,
+      topDelta,
+      bottomDelta
+    }
   }
 
   private initRandomHeightmap() {

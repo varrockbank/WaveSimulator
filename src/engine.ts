@@ -170,19 +170,24 @@ export class Engine {
   private updateSpringModel() {
     const heightMap = this.heightMap
     const velocityMap = this.velocityMap
-    for(let i = 0 ; i < heightMap.length; i++) {
-      const rowHeight = heightMap[i]
-      const rowVelocity = velocityMap[i]
-      for(let j = 0 ; j < rowHeight.length; j++) {
-        const velocity = rowVelocity[j] 
-        rowHeight[j] += velocity
+
+    console.assert(heightMap.length == velocityMap.length)
+    let rowNum = heightMap.length
+    while(rowNum--) {
+      const heightRow = heightMap[rowNum]
+      const velocityRow = velocityMap[rowNum]
+      console.assert(heightRow.length == velocityRow.length)
+      let colNum = heightRow.length
+      while(colNum--) {
+        const velocity = velocityRow[colNum]
+        heightRow[colNum] += velocity
 
         const targetHeight = 0
-        const height = rowHeight[j]
+        const height = heightRow[colNum]
         const x = height - targetHeight
         const acceleration = (-1 * this.K * x) - ( this.D * velocity)
-        rowVelocity[j] += this.roundDecimal(acceleration)
-        rowVelocity[j] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(rowVelocity[j]))
+        velocityRow[colNum] += this.roundDecimal(acceleration)
+        velocityRow[colNum] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityRow[colNum]))
       }
     }
   }

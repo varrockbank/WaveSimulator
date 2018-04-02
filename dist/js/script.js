@@ -230,18 +230,22 @@ var Engine = function () {
         value: function updateSpringModel() {
             var heightMap = this.heightMap;
             var velocityMap = this.velocityMap;
-            for (var i = 0; i < heightMap.length; i++) {
-                var rowHeight = heightMap[i];
-                var rowVelocity = velocityMap[i];
-                for (var j = 0; j < rowHeight.length; j++) {
-                    var velocity = rowVelocity[j];
-                    rowHeight[j] += velocity;
+            console.assert(heightMap.length == velocityMap.length);
+            var rowNum = heightMap.length;
+            while (rowNum--) {
+                var heightRow = heightMap[rowNum];
+                var velocityRow = velocityMap[rowNum];
+                console.assert(heightRow.length == velocityRow.length);
+                var colNum = heightRow.length;
+                while (colNum--) {
+                    var velocity = velocityRow[colNum];
+                    heightRow[colNum] += velocity;
                     var targetHeight = 0;
-                    var height = rowHeight[j];
+                    var height = heightRow[colNum];
                     var x = height - targetHeight;
                     var acceleration = -1 * this.K * x - this.D * velocity;
-                    rowVelocity[j] += this.roundDecimal(acceleration);
-                    rowVelocity[j] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(rowVelocity[j]));
+                    velocityRow[colNum] += this.roundDecimal(acceleration);
+                    velocityRow[colNum] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityRow[colNum]));
                 }
             }
         }

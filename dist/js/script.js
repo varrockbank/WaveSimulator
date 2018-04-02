@@ -328,15 +328,15 @@ var Engine = function () {
     }, {
         key: "initSpringModel",
         value: function initSpringModel() {
-            var heightMap = new Array(this.ROWS + 1);
-            for (var i = 0; i < heightMap.length; i++) {
-                heightMap[i] = new Array(this.COLUMNS + 1).fill(0);
+            var numRows = this.ROWS + 1;
+            var numCols = this.COLUMNS + 1;
+            var heightMap = new Array(numRows);
+            var velocityMap = new Array(numRows);
+            while (numRows--) {
+                heightMap[numRows] = new Array(numCols).fill(0);
+                velocityMap[numRows] = new Array(numCols).fill(0);
             }
             this.heightMap = heightMap;
-            var velocityMap = new Array(this.ROWS + 1);
-            for (var _i6 = 0; _i6 < velocityMap.length; _i6++) {
-                velocityMap[_i6] = new Array(this.COLUMNS + 1).fill(0);
-            }
             this.velocityMap = velocityMap;
         }
     }, {
@@ -359,19 +359,19 @@ var Engine = function () {
             }
             // Loop over inner rows, assigning height as +-1 from midpoint of top and left neighbor
             for (var _j5 = 1; _j5 < this.COLUMNS + 1; _j5++) {
-                for (var _i7 = 1; _i7 < this.ROWS + 1; _i7++) {
-                    var topNeighbor = heightMap[_i7 - 1][_j5];
-                    var leftNeighbor = heightMap[_i7][_j5 - 1];
+                for (var _i6 = 1; _i6 < this.ROWS + 1; _i6++) {
+                    var topNeighbor = heightMap[_i6 - 1][_j5];
+                    var leftNeighbor = heightMap[_i6][_j5 - 1];
                     var midpoint = (topNeighbor + leftNeighbor) / 2;
-                    heightMap[_i7][_j5] = Math.round(midpoint) + this.getRandomDirection();
+                    heightMap[_i6][_j5] = Math.round(midpoint) + this.getRandomDirection();
                 }
             }
             // Map heightMap to geometry
-            for (var _i8 = 0; _i8 < heightMap.length; _i8++) {
-                var row = heightMap[_i8];
+            for (var _i7 = 0; _i7 < heightMap.length; _i7++) {
+                var row = heightMap[_i7];
                 for (var _j6 = 0; _j6 < row.length; _j6++) {
                     var _height2 = row[_j6];
-                    var verticeIndex = this.getVerticeIndex(_i8, _j6);
+                    var verticeIndex = this.getVerticeIndex(_i7, _j6);
                     this.updateVertex(verticeIndex, _height2);
                 }
             }

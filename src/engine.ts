@@ -260,16 +260,15 @@ export class Engine {
   }
 
   private initSpringModel() {
-    const heightMap = new Array(this.ROWS+1);
-    for(let i = 0 ; i < heightMap.length; i++) {
-      heightMap[i] = (new Array(this.COLUMNS + 1)).fill(0)
+    let numRows = this.ROWS + 1
+    const numCols = this.COLUMNS + 1
+    const heightMap = new Array(numRows);
+    const velocityMap = new Array(numRows);
+    while(numRows--) {
+      heightMap[numRows] = (new Array(numCols)).fill(0)
+      velocityMap[numRows] = (new Array(numCols)).fill(0)
     }
     this.heightMap = heightMap
-
-    const velocityMap = new Array(this.ROWS+1);
-    for(let i = 0 ; i < velocityMap.length; i++) {
-      velocityMap[i] = (new Array(this.COLUMNS + 1)).fill(0)
-    }
     this.velocityMap = velocityMap
   }
 

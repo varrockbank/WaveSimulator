@@ -274,41 +274,33 @@ export class Engine {
 
   private initRandomHeightmap() {
     const heightMap = this.heightMap
+    const numCols = this.COLUMNS + 1
+    const numRows = this.ROWS + 1
     // Seed the first cell.
     heightMap[0][0] = Math.floor(5 * Math.random()) * this.getRandomDirection()
     // Random walk along first row.
-    for(let j = 1 ; j < this.COLUMNS + 1 ; j++) {
-      const prev = heightMap[0][j-1];
-      const height = prev + this.getRandomDirection()
-      heightMap[0][j] = height
+    const firstRow = heightMap[0]
+    for(let j = 1 ; j < numCols ; j++) {
+      const neighborHeight = firstRow[j-1]
+      firstRow[j] = neighborHeight + this.getRandomDirection()
     }
     // Random walk along first column.
-    for(let i = 1 ; i < this.ROWS + 1 ; i++) {
-      const prev = heightMap[i-1][0];
-      const height = prev + this.getRandomDirection()
-      heightMap[i][0] = height
+    for(let i = 1 ; i < numRows ; i++) {
+      const neighborHeight = heightMap[i-1][0];
+      heightMap[i][0] = neighborHeight + this.getRandomDirection()
     }
-
-    // Loop over inner rows, assigning height as +-1 from midpoint of top and left neighbor
-    for(let j = 1 ; j < this.COLUMNS + 1 ; j++) {
-      for(let i = 1 ; i < this.ROWS + 1 ; i++) {
-        const topNeighbor = heightMap[i-1][j]
-        const leftNeighbor = heightMap[i][j-1]
+    // Loop over inner cells, assigning height as +-1 from midpoint of top and left neighbor
+    for(let i = 1 ; i < numRows ; i++) {
+      const row = heightMap[i]
+      const rowAbove = heightMap[i-1]
+      for(let j = 1 ; j < numCols ; j++) {
+        const topNeighbor = rowAbove[j]
+        const leftNeighbor = row[j-1]
         const midpoint = ( topNeighbor + leftNeighbor ) /2
         heightMap[i][j] = Math.round(midpoint) + this.getRandomDirection()
       }
     }
-
-    // Map heightMap to geometry
-    for(let i = 0 ; i < heightMap.length; i++) {
-      const row = heightMap[i]
-      for(let j = 0 ; j < row.length; j++) {
-        const height = row[j]
-        const verticeIndex = this.getVerticeIndex(i, j)
-        this.updateVertex(verticeIndex, height)
-      }
-    }
-
+    this.applyHeightmapToGeometry()
     this.digestGeometry()
   }
 

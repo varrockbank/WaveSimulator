@@ -343,38 +343,33 @@ var Engine = function () {
         key: "initRandomHeightmap",
         value: function initRandomHeightmap() {
             var heightMap = this.heightMap;
+            var numCols = this.COLUMNS + 1;
+            var numRows = this.ROWS + 1;
             // Seed the first cell.
             heightMap[0][0] = Math.floor(5 * Math.random()) * this.getRandomDirection();
             // Random walk along first row.
-            for (var j = 1; j < this.COLUMNS + 1; j++) {
-                var prev = heightMap[0][j - 1];
-                var height = prev + this.getRandomDirection();
-                heightMap[0][j] = height;
+            var firstRow = heightMap[0];
+            for (var j = 1; j < numCols; j++) {
+                var neighborHeight = firstRow[j - 1];
+                firstRow[j] = neighborHeight + this.getRandomDirection();
             }
             // Random walk along first column.
-            for (var i = 1; i < this.ROWS + 1; i++) {
-                var _prev = heightMap[i - 1][0];
-                var _height = _prev + this.getRandomDirection();
-                heightMap[i][0] = _height;
+            for (var i = 1; i < numRows; i++) {
+                var _neighborHeight = heightMap[i - 1][0];
+                heightMap[i][0] = _neighborHeight + this.getRandomDirection();
             }
-            // Loop over inner rows, assigning height as +-1 from midpoint of top and left neighbor
-            for (var _j5 = 1; _j5 < this.COLUMNS + 1; _j5++) {
-                for (var _i6 = 1; _i6 < this.ROWS + 1; _i6++) {
-                    var topNeighbor = heightMap[_i6 - 1][_j5];
-                    var leftNeighbor = heightMap[_i6][_j5 - 1];
+            // Loop over inner cells, assigning height as +-1 from midpoint of top and left neighbor
+            for (var _i6 = 1; _i6 < numRows; _i6++) {
+                var row = heightMap[_i6];
+                var rowAbove = heightMap[_i6 - 1];
+                for (var _j5 = 1; _j5 < numCols; _j5++) {
+                    var topNeighbor = rowAbove[_j5];
+                    var leftNeighbor = row[_j5 - 1];
                     var midpoint = (topNeighbor + leftNeighbor) / 2;
                     heightMap[_i6][_j5] = Math.round(midpoint) + this.getRandomDirection();
                 }
             }
-            // Map heightMap to geometry
-            for (var _i7 = 0; _i7 < heightMap.length; _i7++) {
-                var row = heightMap[_i7];
-                for (var _j6 = 0; _j6 < row.length; _j6++) {
-                    var _height2 = row[_j6];
-                    var verticeIndex = this.getVerticeIndex(_i7, _j6);
-                    this.updateVertex(verticeIndex, _height2);
-                }
-            }
+            this.applyHeightmapToGeometry();
             this.digestGeometry();
         }
     }, {

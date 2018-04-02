@@ -66,12 +66,14 @@ export class Engine {
     this.controls = new THREE.OrbitControls( this.camera, this.renderer.domElement )
     // Instantiate raycaster.
     this.raycaster = new THREE.Raycaster()
-    
+
+    const texture = new THREE.TextureLoader().load( "textures/water.jpg")
     const geometry = new THREE.PlaneGeometry(this.PLANE_WIDTH, this.PLANE_HEIGHT, this.ROWS, this.COLUMNS)
     const material = new THREE.MeshPhongMaterial({
-      color: 0x00EEEE,
+      /// color: 0x00EEEE,
       flatShading: true,
-      shininess: 5
+      shininess: 5,
+      map: texture,
     })
 
     const plane = new THREE.Mesh(geometry, material)

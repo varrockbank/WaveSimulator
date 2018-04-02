@@ -129,11 +129,13 @@ var Engine = function () {
         this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
         // Instantiate raycaster.
         this.raycaster = new THREE.Raycaster();
+        var texture = new THREE.TextureLoader().load("textures/water.jpg");
         var geometry = new THREE.PlaneGeometry(this.PLANE_WIDTH, this.PLANE_HEIGHT, this.ROWS, this.COLUMNS);
         var material = new THREE.MeshPhongMaterial({
-            color: 0x00EEEE,
+            /// color: 0x00EEEE,
             flatShading: true,
-            shininess: 5
+            shininess: 5,
+            map: texture
         });
         var plane = new THREE.Mesh(geometry, material);
         plane.position.z = 20;

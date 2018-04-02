@@ -90,6 +90,7 @@ var _createClass = function () { function defineProperties(target, props) { for 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 Object.defineProperty(exports, "__esModule", { value: true });
+var wave_1 = __webpack_require__(2);
 
 var Engine = function () {
     function Engine() {
@@ -258,6 +259,23 @@ var Engine = function () {
                     }
                 }
             }
+            if (this.wave) {
+                var points = this.wave.getPoints();
+                for (var _i7 = 0; _i7 < points.length; _i7++) {
+                    var _points$_i = points[_i7],
+                        _x = _points$_i.x,
+                        y = _points$_i.y,
+                        z = _points$_i.z;
+
+                    var _verticeIndex = this.getVerticeIndex(y, _x);
+                    if (_verticeIndex >= 0) {
+                        var currHeight = this.heightMap[y][_x];
+                        var aggregate = z + currHeight;
+                        this.updateGeometry(_verticeIndex, aggregate);
+                    }
+                }
+                this.wave.step();
+            }
             this.refreshGeometry();
         }
         /** Return -1, 0, 1 */
@@ -281,8 +299,8 @@ var Engine = function () {
             }
             this.heightMap = heightMap;
             var velocityMap = new Array(this.ROWS + 1);
-            for (var _i7 = 0; _i7 < velocityMap.length; _i7++) {
-                velocityMap[_i7] = new Array(this.COLUMNS + 1).fill(0);
+            for (var _i8 = 0; _i8 < velocityMap.length; _i8++) {
+                velocityMap[_i8] = new Array(this.COLUMNS + 1).fill(0);
             }
             this.velocityMap = velocityMap;
         }
@@ -306,19 +324,19 @@ var Engine = function () {
             }
             // Loop over inner rows, assigning height as +-1 from midpoint of top and left neighbor
             for (var _j6 = 1; _j6 < this.COLUMNS + 1; _j6++) {
-                for (var _i8 = 1; _i8 < this.ROWS + 1; _i8++) {
-                    var topNeighbor = heightMap[_i8 - 1][_j6];
-                    var leftNeighbor = heightMap[_i8][_j6 - 1];
+                for (var _i9 = 1; _i9 < this.ROWS + 1; _i9++) {
+                    var topNeighbor = heightMap[_i9 - 1][_j6];
+                    var leftNeighbor = heightMap[_i9][_j6 - 1];
                     var midpoint = (topNeighbor + leftNeighbor) / 2;
-                    heightMap[_i8][_j6] = Math.round(midpoint) + this.getRandomDirection();
+                    heightMap[_i9][_j6] = Math.round(midpoint) + this.getRandomDirection();
                 }
             }
             // Map heightMap to geometry
-            for (var _i9 = 0; _i9 < heightMap.length; _i9++) {
-                var row = heightMap[_i9];
+            for (var _i10 = 0; _i10 < heightMap.length; _i10++) {
+                var row = heightMap[_i10];
                 for (var _j7 = 0; _j7 < row.length; _j7++) {
                     var _height2 = row[_j7];
-                    var verticeIndex = this.getVerticeIndex(_i9, _j7);
+                    var verticeIndex = this.getVerticeIndex(_i10, _j7);
                     this.updateGeometry(verticeIndex, _height2);
                 }
             }
@@ -397,27 +415,29 @@ var Engine = function () {
             });
             if (planeIntersect) {
                 var _planeIntersect$point = planeIntersect.point,
-                    _x = _planeIntersect$point.x,
+                    _x2 = _planeIntersect$point.x,
                     _y = _planeIntersect$point.y;
                 // These are sequenced to match the vertices indexing.
 
-                var columnIndex = Math.round(_x / this.CELL_WIDTH) + this.COLUMNS / 2;
+                var columnIndex = Math.round(_x2 / this.CELL_WIDTH) + this.COLUMNS / 2;
                 var rowIndex = -1 * Math.round(_y / this.CELL_HEIGHT) + this.ROWS / 2;
-                var points = this.getRasterizedCircle({ x: rowIndex, y: columnIndex });
-                points.filter(function (_ref) {
-                    var x = _ref.x,
-                        y = _ref.y;
-                    return x >= 0 && x < _this4.COLUMNS && y >= 0 && y <= _this4.ROWS;
-                }).forEach(function (point) {
-                    _this4.heightMap[point.x][point.y] = point.z;
-                });
-                this.refreshGeometry();
+                this.wave = new wave_1.Wave({ x: columnIndex, y: rowIndex });
+                this.iterate();
+                // const points = this.getRasterizedCircle({x: rowIndex, y: columnIndex})
+                // points.filter(({x, y}) => x >= 0 && x < this.COLUMNS && y >= 0 && y <= this.ROWS)
+                //   .forEach(point => {
+                //     this.heightMap[point.x][point.y] = point.z
+                //   });
+                // this.refreshGeometry()
             }
         }
     }, {
         key: "getVerticeIndex",
         value: function getVerticeIndex(rowIndex, columnIndex) {
-            return rowIndex * (this.COLUMNS + 1) + columnIndex;
+            var index = rowIndex * (this.COLUMNS + 1) + columnIndex;
+            var maxIndex = (this.COLUMNS + 1) * (this.ROWS + 1);
+            if (index > maxIndex) return -1;
+            return index;
         }
         // TODO: Use midpoint circle algorithm
 
@@ -479,6 +499,142 @@ var Engine = function () {
 }();
 
 exports.Engine = Engine;
+
+/***/ }),
+/* 2 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+Object.defineProperty(exports, "__esModule", { value: true });
+/**
+ * A wave is represented as a time sequenced set of height impressions relative to an epicenter.
+ * This implementation uses pre-determined static values for the sequence.
+ * The alternative is modeling the wave as a sum of forces eminating from the epicenter
+ * which reduces down to some mass constant and acceleration vectors, and dynamically updating
+ * the system. This is computationally expensive and tricky to get a good model, especially
+ * in a discrete space lacking sufficient granularity. Plus, this computation is mostly
+ * deterministic, give or take floating point errors, for some given mass M and the fact that
+ * center-of-mass for the wave is fixed relative to the outer system. A convenient heuristic to
+ * keep in mind is that this force, atleast in the abstract, should be conservative. In other words,
+ * whatever implementation, static or dynamic, should ensure the total force does not increase,
+ * as this will ensure the simulation to diverges.
+ */
+
+var Wave = function () {
+    function Wave(epicenter) {
+        _classCallCheck(this, Wave);
+
+        this.epicenter = epicenter;
+        this.stage = 0;
+        this.states = {
+            0: [{
+                x_offset: 0,
+                y_offset: 0,
+                z: 10
+            }],
+            1: [{
+                x_offset: -1,
+                y_offset: 0,
+                z: 5
+            }, {
+                x_offset: 1,
+                y_offset: 0,
+                z: 5
+            }, {
+                x_offset: 0,
+                y_offset: 1,
+                z: 5
+            }, {
+                x_offset: 0,
+                y_offset: -1,
+                z: 5
+            }],
+            2: [{
+                x_offset: -1,
+                y_offset: -1,
+                z: 3
+            }, {
+                x_offset: 1,
+                y_offset: 1,
+                z: 3
+            }, {
+                x_offset: -1,
+                y_offset: 1,
+                z: 3
+            }, {
+                x_offset: 1,
+                y_offset: -1,
+                z: 3
+            }],
+            3: [{
+                x_offset: -1,
+                y_offset: -2,
+                z: 1
+            }, {
+                x_offset: 1,
+                y_offset: -2,
+                z: 1
+            }, {
+                x_offset: -1,
+                y_offset: 2,
+                z: 1
+            }, {
+                x_offset: 1,
+                y_offset: 2,
+                z: 1
+            }, {
+                x_offset: -2,
+                y_offset: -1,
+                z: 1
+            }, {
+                x_offset: -2,
+                y_offset: 1,
+                z: 1
+            }, {
+                x_offset: 2,
+                y_offset: -1,
+                z: 1
+            }, {
+                x_offset: 2,
+                y_offset: 1,
+                z: 1
+            }]
+        };
+    }
+
+    _createClass(Wave, [{
+        key: "getPoints",
+        value: function getPoints() {
+            var _epicenter = this.epicenter,
+                x = _epicenter.x,
+                y = _epicenter.y;
+
+            var state = this.states[this.stage];
+            return !state ? [] : state.map(function (relativePoint) {
+                return {
+                    x: x + relativePoint.x_offset,
+                    y: y + relativePoint.y_offset,
+                    z: relativePoint.z
+                };
+            });
+        }
+    }, {
+        key: "step",
+        value: function step() {
+            this.stage++;
+        }
+    }]);
+
+    return Wave;
+}();
+
+exports.Wave = Wave;
 
 /***/ })
 /******/ ]);

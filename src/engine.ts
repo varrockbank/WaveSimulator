@@ -1,9 +1,10 @@
+import { Wave } from "./wave";
+
 interface Point {
   x: number,
   y: number,
   z?: number,
 }
-
 
 export class Engine {
   private width = window.innerWidth
@@ -41,6 +42,8 @@ export class Engine {
   private planeUUID: string
   private geometry: THREE.Geometry
 
+  private wave: Wave
+
   constructor () {
     // Instance Scene.
     this.scene = new THREE.Scene()
@@ -59,7 +62,7 @@ export class Engine {
     
     const geometry = new THREE.PlaneGeometry(this.PLANE_WIDTH, this.PLANE_HEIGHT, this.ROWS, this.COLUMNS)
     const material = new THREE.MeshPhongMaterial({
-      color: 0x00EEEE	 ,
+      color: 0x00EEEE,
       flatShading: true,
       shininess: 5
     })
@@ -112,7 +115,6 @@ export class Engine {
   private iterate() {
     const heightMap = this.heightMap
     const velocityMap = this.velocityMap
-
     for(let i = 0 ; i < heightMap.length; i++) {
       const rowHeight = heightMap[i]
       const rowVelocity = velocityMap[i]
@@ -201,6 +203,19 @@ export class Engine {
       }
     }
 
+    if(this.wave) {
+      const points = this.wave.getPoints()
+      for(let i = 0 ; i < points.length; i++) {
+        const {x, y, z} = points[i]
+        const verticeIndex = this.getVerticeIndex(y, x)
+        if(verticeIndex >= 0) {
+          const currHeight = this.heightMap[y][x]
+          const aggregate = z + currHeight
+          this.updateGeometry(verticeIndex, aggregate)
+        }
+      }
+      this.wave.step()
+    }
     this.refreshGeometry()
   }
 
@@ -323,20 +338,25 @@ export class Engine {
       // These are sequenced to match the vertices indexing.
       const columnIndex = Math.round(x / this.CELL_WIDTH) + (this.COLUMNS / 2);
       const rowIndex = -1 * Math.round(y / this.CELL_HEIGHT) + (this.ROWS / 2);
+      this.wave = new Wave({x: columnIndex, y: rowIndex})
 
-      const points = this.getRasterizedCircle({x: rowIndex, y: columnIndex})
+      this.iterate()
+      // const points = this.getRasterizedCircle({x: rowIndex, y: columnIndex})
+      // points.filter(({x, y}) => x >= 0 && x < this.COLUMNS && y >= 0 && y <= this.ROWS)
+      //   .forEach(point => {
+      //     this.heightMap[point.x][point.y] = point.z
+      //   });
 
-      points.filter(({x, y}) => x >= 0 && x < this.COLUMNS && y >= 0 && y <= this.ROWS)
-        .forEach(point => {
-          this.heightMap[point.x][point.y] = point.z
-        });
-
-      this.refreshGeometry()
+      // this.refreshGeometry()
     }
   }
 
   private getVerticeIndex(rowIndex, columnIndex) {
-    return rowIndex * (this.COLUMNS + 1) + columnIndex;
+    const index = rowIndex * (this.COLUMNS + 1) + columnIndex;
+    const maxIndex = (this.COLUMNS + 1) * (this.ROWS + 1);
+    if(index > maxIndex)
+      return -1
+    return index;
   }
 
   // TODO: Use midpoint circle algorithm

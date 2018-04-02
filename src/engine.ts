@@ -122,7 +122,7 @@ export class Engine {
 
   private iterate() {
     this.updateSpringModel()
-    this.updatePropgationModel()
+    this.updatePropagationModel()
 
     this.applyHeightmapToGeometry()
     this.applyWavesToGeometry()
@@ -147,9 +147,11 @@ export class Engine {
     while(numWaves--) {
       const wave = this.waves[numWaves]
       const points = wave.getPoints()
-      for(let i = 0 ; i < points.length; i++) {
-        const {x, y, z} = points[i]
+      let numPoints = points.length
+      while(numPoints--)  {
+        const {x, y, z} = points[numPoints]
         const verticeIndex = this.getVerticeIndex(y, x)
+        // Avoid wave points outside boundary plane.
         if(verticeIndex >= 0) {
           const currHeight = this.heightMap[y][x]
           const aggregate = z + currHeight
@@ -183,7 +185,7 @@ export class Engine {
     }
   }
 
-  private updatePropgationModel() {
+  private updatePropagationModel() {
     const heightMap = this.heightMap
     const velocityMap = this.velocityMap
 

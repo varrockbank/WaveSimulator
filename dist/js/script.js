@@ -177,7 +177,7 @@ var Engine = function () {
         key: "iterate",
         value: function iterate() {
             this.updateSpringModel();
-            this.updatePropgationModel();
+            this.updatePropagationModel();
             this.applyHeightmapToGeometry();
             this.applyWavesToGeometry();
             this.digestGeometry();
@@ -202,13 +202,15 @@ var Engine = function () {
             while (numWaves--) {
                 var wave = this.waves[numWaves];
                 var points = wave.getPoints();
-                for (var i = 0; i < points.length; i++) {
-                    var _points$i = points[i],
-                        x = _points$i.x,
-                        y = _points$i.y,
-                        z = _points$i.z;
+                var numPoints = points.length;
+                while (numPoints--) {
+                    var _points$numPoints = points[numPoints],
+                        x = _points$numPoints.x,
+                        y = _points$numPoints.y,
+                        z = _points$numPoints.z;
 
                     var verticeIndex = this.getVerticeIndex(y, x);
+                    // Avoid wave points outside boundary plane.
                     if (verticeIndex >= 0) {
                         var currHeight = this.heightMap[y][x];
                         var aggregate = z + currHeight;
@@ -242,8 +244,8 @@ var Engine = function () {
             }
         }
     }, {
-        key: "updatePropgationModel",
-        value: function updatePropgationModel() {
+        key: "updatePropagationModel",
+        value: function updatePropagationModel() {
             var heightMap = this.heightMap;
             var velocityMap = this.velocityMap;
             var _propagationModelBuff = this.propagationModelBuffers,

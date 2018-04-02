@@ -186,11 +186,13 @@ var Engine = function () {
         key: "applyHeightmapToGeometry",
         value: function applyHeightmapToGeometry() {
             var heightMap = this.heightMap;
-            for (var i = 0; i < heightMap.length; i++) {
-                var rowHeight = heightMap[i];
-                for (var j = 0; j < rowHeight.length; j++) {
-                    var height = this.heightMap[i][j];
-                    var verticeIndex = this.getVerticeIndex(i, j);
+            var rowNum = heightMap.length;
+            while (rowNum--) {
+                var row = heightMap[rowNum];
+                var colNum = row.length;
+                while (colNum--) {
+                    var height = this.heightMap[rowNum][colNum];
+                    var verticeIndex = this.getVerticeIndex(rowNum, colNum);
                     this.updateVertex(verticeIndex, height);
                 }
             }

@@ -132,11 +132,13 @@ export class Engine {
 
   private applyHeightmapToGeometry() {
     const heightMap = this.heightMap
-    for(let i = 0 ; i < heightMap.length; i++) {
-      const rowHeight = heightMap[i]
-      for(let j = 0 ; j < rowHeight.length; j++) {
-        const height = this.heightMap[i][j]
-        const verticeIndex = this.getVerticeIndex(i, j)
+    let rowNum = heightMap.length
+    while(rowNum--) {
+      const row = heightMap[rowNum]
+      let colNum = row.length
+      while(colNum--) {
+        const height = this.heightMap[rowNum][colNum]
+        const verticeIndex = this.getVerticeIndex(rowNum, colNum)
         this.updateVertex(verticeIndex, height)
       }
     }

@@ -1,5 +1,6 @@
-import { Wave } from "./wave";
-import { RippleModel } from "./ripple";
+import { Wave } from "./wave"
+import { RippleModel } from "./ripple"
+import { SpringModel } from "./spring_model"
 
 interface Point {
   x: number,
@@ -12,8 +13,6 @@ export class Engine {
   private height = window.innerHeight
 
   // Physics parameters.
-  private K = 0.03 // "Hooke's constant"
-  private D = 0.025 // Dampening Factor
   private S = 0.0005 // Wave spread.
   private BACK_PROPAGATIONS = 4
   private TERMINAL_VELOCITY = 1.5
@@ -25,9 +24,7 @@ export class Engine {
   private readonly CELL_HEIGHT = this.PLANE_HEIGHT / this.ROWS
   private readonly CELL_WIDTH = this.PLANE_WIDTH / this.COLUMNS
 
-  private heightMap: number[][]
-  private velocityMap: number[][]
-
+  private springModel: SpringModel
   private rippleModel: RippleModel
 
   private propagationModelBuffers: {
@@ -92,7 +89,7 @@ export class Engine {
 
     this.addEventListeners()
 
-    this.initSpringModel()
+    this.springModel = new SpringModel(this.ROWS, this.COLUMNS)
     this.initPropagationModel()
     this.initRandomHeightmap()
     this.rippleModel = new RippleModel(this.ROWS, this.COLUMNS)
@@ -127,7 +124,7 @@ export class Engine {
   }
 
   private iterate() {
-    this.updateSpringModel()
+    this.springModel.iterate()
     this.updatePropagationModel()
 
     // TODO: Add floating point rounding method
@@ -139,7 +136,7 @@ export class Engine {
       for(let j = 0 ; j < this.COLUMNS ; j++) {
         // TODO: maybe don't merge. keep a separate springModel heightmap and a ripplemodel heightmap
         // and render the matrix addition
-        this.heightMap[i][j] += rippleHeightMap[i][j]
+        this.springModel.heightMap[i][j] += rippleHeightMap[i][j]
       }
     }
 
@@ -150,13 +147,13 @@ export class Engine {
   }
 
   private applyHeightmapToGeometry() {
-    const heightMap = this.heightMap
+    const heightMap = this.springModel.heightMap
     let rowNum = heightMap.length
     while(rowNum--) {
       const row = heightMap[rowNum]
       let colNum = row.length
       while(colNum--) {
-        const height = this.heightMap[rowNum][colNum]
+        const height = this.springModel.heightMap[rowNum][colNum]
         const verticeIndex = this.getVerticeIndex(rowNum, colNum)
         this.updateVertex(verticeIndex, height)
       }
@@ -174,7 +171,7 @@ export class Engine {
         const verticeIndex = this.getVerticeIndex(y, x)
         // Avoid wave points outside boundary plane.
         if(verticeIndex >= 0) {
-          const currHeight = this.heightMap[y][x]
+          const currHeight = this.springModel.heightMap[y][x]
           const aggregate = z + currHeight
           this.updateVertex(verticeIndex, aggregate)
         }
@@ -186,34 +183,9 @@ export class Engine {
     }
   }
 
-  private updateSpringModel() {
-    const heightMap = this.heightMap
-    const velocityMap = this.velocityMap
-
-    console.assert(heightMap.length == velocityMap.length)
-    let rowNum = heightMap.length
-    while(rowNum--) {
-      const heightRow = heightMap[rowNum]
-      const velocityRow = velocityMap[rowNum]
-      console.assert(heightRow.length == velocityRow.length)
-      let colNum = heightRow.length
-      while(colNum--) {
-        const velocity = velocityRow[colNum]
-        heightRow[colNum] += velocity
-
-        const targetHeight = 0
-        const height = heightRow[colNum]
-        const x = height - targetHeight
-        const acceleration = (-1 * this.K * x) - ( this.D * velocity)
-        velocityRow[colNum] += this.roundDecimal(acceleration)
-        velocityRow[colNum] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityRow[colNum]))
-      }
-    }
-  }
-
   private updatePropagationModel() {
-    const heightMap = this.heightMap
-    const velocityMap = this.velocityMap
+    const heightMap = this.springModel.heightMap
+    const velocityMap = this.springModel.velocityMap
 
     const {
       leftDelta,
@@ -306,19 +278,6 @@ export class Engine {
     return Math.round(num * 10000) / 10000
   }
 
-  private initSpringModel() {
-    let numRows = this.ROWS + 1
-    const numCols = this.COLUMNS + 1
-    const heightMap = new Array(numRows);
-    const velocityMap = new Array(numRows);
-    while(numRows--) {
-      heightMap[numRows] = (new Array(numCols)).fill(0)
-      velocityMap[numRows] = (new Array(numCols)).fill(0)
-    }
-    this.heightMap = heightMap
-    this.velocityMap = velocityMap
-  }
-
   private initPropagationModel() {
     const leftDelta = new Array(this.ROWS + 1);
     const rightDelta = new Array(this.ROWS + 1);
@@ -341,7 +300,8 @@ export class Engine {
   }
 
   private initRandomHeightmap() {
-    const heightMap = this.heightMap
+    // TODO: decouple the engine's heightmap from spring model.
+    const heightMap = this.springModel.heightMap
     const numCols = this.COLUMNS + 1
     const numRows = this.ROWS + 1
     // Seed the first cell.

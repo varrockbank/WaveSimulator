@@ -91,6 +91,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 Object.defineProperty(exports, "__esModule", { value: true });
 var ripple_1 = __webpack_require__(2);
+var spring_model_1 = __webpack_require__(3);
 
 var Engine = function () {
     function Engine() {
@@ -99,8 +100,6 @@ var Engine = function () {
         this.width = window.innerWidth;
         this.height = window.innerHeight;
         // Physics parameters.
-        this.K = 0.03; // "Hooke's constant"
-        this.D = 0.025; // Dampening Factor
         this.S = 0.0005; // Wave spread.
         this.BACK_PROPAGATIONS = 4;
         this.TERMINAL_VELOCITY = 1.5;
@@ -145,7 +144,7 @@ var Engine = function () {
         this.scene.add(axes);
         this.animate();
         this.addEventListeners();
-        this.initSpringModel();
+        this.springModel = new spring_model_1.SpringModel(this.ROWS, this.COLUMNS);
         this.initPropagationModel();
         this.initRandomHeightmap();
         this.rippleModel = new ripple_1.RippleModel(this.ROWS, this.COLUMNS);
@@ -178,7 +177,7 @@ var Engine = function () {
     _createClass(Engine, [{
         key: "iterate",
         value: function iterate() {
-            this.updateSpringModel();
+            this.springModel.iterate();
             this.updatePropagationModel();
             // TODO: Add floating point rounding method
             // TODO: run this at half time step
@@ -188,7 +187,7 @@ var Engine = function () {
                 for (var j = 0; j < this.COLUMNS; j++) {
                     // TODO: maybe don't merge. keep a separate springModel heightmap and a ripplemodel heightmap
                     // and render the matrix addition
-                    this.heightMap[i][j] += rippleHeightMap[i][j];
+                    this.springModel.heightMap[i][j] += rippleHeightMap[i][j];
                 }
             }
             this.applyHeightmapToGeometry();
@@ -198,13 +197,13 @@ var Engine = function () {
     }, {
         key: "applyHeightmapToGeometry",
         value: function applyHeightmapToGeometry() {
-            var heightMap = this.heightMap;
+            var heightMap = this.springModel.heightMap;
             var rowNum = heightMap.length;
             while (rowNum--) {
                 var row = heightMap[rowNum];
                 var colNum = row.length;
                 while (colNum--) {
-                    var height = this.heightMap[rowNum][colNum];
+                    var height = this.springModel.heightMap[rowNum][colNum];
                     var verticeIndex = this.getVerticeIndex(rowNum, colNum);
                     this.updateVertex(verticeIndex, height);
                 }
@@ -227,7 +226,7 @@ var Engine = function () {
                     var verticeIndex = this.getVerticeIndex(y, x);
                     // Avoid wave points outside boundary plane.
                     if (verticeIndex >= 0) {
-                        var currHeight = this.heightMap[y][x];
+                        var currHeight = this.springModel.heightMap[y][x];
                         var aggregate = z + currHeight;
                         this.updateVertex(verticeIndex, aggregate);
                     }
@@ -239,34 +238,10 @@ var Engine = function () {
             }
         }
     }, {
-        key: "updateSpringModel",
-        value: function updateSpringModel() {
-            var heightMap = this.heightMap;
-            var velocityMap = this.velocityMap;
-            console.assert(heightMap.length == velocityMap.length);
-            var rowNum = heightMap.length;
-            while (rowNum--) {
-                var heightRow = heightMap[rowNum];
-                var velocityRow = velocityMap[rowNum];
-                console.assert(heightRow.length == velocityRow.length);
-                var colNum = heightRow.length;
-                while (colNum--) {
-                    var velocity = velocityRow[colNum];
-                    heightRow[colNum] += velocity;
-                    var targetHeight = 0;
-                    var height = heightRow[colNum];
-                    var x = height - targetHeight;
-                    var acceleration = -1 * this.K * x - this.D * velocity;
-                    velocityRow[colNum] += this.roundDecimal(acceleration);
-                    velocityRow[colNum] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityRow[colNum]));
-                }
-            }
-        }
-    }, {
         key: "updatePropagationModel",
         value: function updatePropagationModel() {
-            var heightMap = this.heightMap;
-            var velocityMap = this.velocityMap;
+            var heightMap = this.springModel.heightMap;
+            var velocityMap = this.springModel.velocityMap;
             var _propagationModelBuff = this.propagationModelBuffers,
                 leftDelta = _propagationModelBuff.leftDelta,
                 rightDelta = _propagationModelBuff.rightDelta,
@@ -360,20 +335,6 @@ var Engine = function () {
             return Math.round(num * 10000) / 10000;
         }
     }, {
-        key: "initSpringModel",
-        value: function initSpringModel() {
-            var numRows = this.ROWS + 1;
-            var numCols = this.COLUMNS + 1;
-            var heightMap = new Array(numRows);
-            var velocityMap = new Array(numRows);
-            while (numRows--) {
-                heightMap[numRows] = new Array(numCols).fill(0);
-                velocityMap[numRows] = new Array(numCols).fill(0);
-            }
-            this.heightMap = heightMap;
-            this.velocityMap = velocityMap;
-        }
-    }, {
         key: "initPropagationModel",
         value: function initPropagationModel() {
             var leftDelta = new Array(this.ROWS + 1);
@@ -398,7 +359,8 @@ var Engine = function () {
     }, {
         key: "initRandomHeightmap",
         value: function initRandomHeightmap() {
-            var heightMap = this.heightMap;
+            // TODO: decouple the engine's heightmap from spring model.
+            var heightMap = this.springModel.heightMap;
             var numCols = this.COLUMNS + 1;
             var numRows = this.ROWS + 1;
             // Seed the first cell.
@@ -510,12 +472,6 @@ var Engine = function () {
                 // this.waves.push( new Wave({x: columnIndex, y: rowIndex}) )
                 this.rippleModel.applyImpression(rowIndex, columnIndex);
                 this.iterate();
-                // const points = this.getRasterizedCircle({x: rowIndex, y: columnIndex})
-                // points.filter(({x, y}) => x >= 0 && x < this.COLUMNS && y >= 0 && y <= this.ROWS)
-                //   .forEach(point => {
-                //     this.heightMap[point.x][point.y] = point.z
-                //   });
-                // this.refreshGeometry()
             }
         }
     }, {
@@ -525,60 +481,6 @@ var Engine = function () {
             var maxIndex = (this.COLUMNS + 1) * (this.ROWS + 1);
             if (index > maxIndex) return -1;
             return index;
-        }
-        // TODO: Use midpoint circle algorithm
-
-    }, {
-        key: "getRasterizedCircle",
-        value: function getRasterizedCircle(center) {
-            var summit = 6;
-            var points = [];
-            points.push({
-                x: center.x,
-                y: center.y,
-                z: summit
-            });
-            points.push({
-                x: center.x - 1,
-                y: center.y,
-                z: summit - 1
-            });
-            points.push({
-                x: center.x + 1,
-                y: center.y,
-                z: summit - 1
-            });
-            points.push({
-                x: center.x,
-                y: center.y - 1,
-                z: summit - 1
-            });
-            points.push({
-                x: center.x,
-                y: center.y + 1,
-                z: summit - 1
-            });
-            points.push({
-                x: center.x - 1,
-                y: center.y - 1,
-                z: summit - 2
-            });
-            points.push({
-                x: center.x + 1,
-                y: center.y + 1,
-                z: summit - 2
-            });
-            points.push({
-                x: center.x - 1,
-                y: center.y + 1,
-                z: summit - 2
-            });
-            points.push({
-                x: center.x + 1,
-                y: center.y - 1,
-                z: summit - 2
-            });
-            return points;
         }
     }]);
 
@@ -663,6 +565,84 @@ var RippleModel = function () {
 }();
 
 exports.RippleModel = RippleModel;
+
+/***/ }),
+/* 3 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+/**
+ * Models as water surface as springs along the z-axis.
+ *
+ * Lower dimensional variant: https://gamedevelopment.tutsplus.com/tutorials/make-a-splash-with-dynamic-2d-water-effects--gamedev-236
+ */
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+Object.defineProperty(exports, "__esModule", { value: true });
+
+var SpringModel = function () {
+    function SpringModel(ROWS, COLUMNS) {
+        _classCallCheck(this, SpringModel);
+
+        this.ROWS = ROWS;
+        this.COLUMNS = COLUMNS;
+        // Physics parameters.
+        this.K = 0.03; // "Hooke's constant"
+        this.D = 0.025; // Dampening Factor
+        this.TERMINAL_VELOCITY = 1.5;
+        var numRows = this.ROWS + 1;
+        var numCols = this.COLUMNS + 1;
+        var heightMap = new Array(numRows);
+        var velocityMap = new Array(numRows);
+        while (numRows--) {
+            heightMap[numRows] = new Array(numCols).fill(0);
+            velocityMap[numRows] = new Array(numCols).fill(0);
+        }
+        this.heightMap = heightMap;
+        this.velocityMap = velocityMap;
+    }
+
+    _createClass(SpringModel, [{
+        key: "iterate",
+        value: function iterate() {
+            var heightMap = this.heightMap;
+            var velocityMap = this.velocityMap;
+            console.assert(heightMap.length == velocityMap.length);
+            var rowNum = heightMap.length;
+            while (rowNum--) {
+                var heightRow = heightMap[rowNum];
+                var velocityRow = velocityMap[rowNum];
+                console.assert(heightRow.length == velocityRow.length);
+                var colNum = heightRow.length;
+                while (colNum--) {
+                    var velocity = velocityRow[colNum];
+                    heightRow[colNum] += velocity;
+                    var targetHeight = 0;
+                    var height = heightRow[colNum];
+                    var x = height - targetHeight;
+                    var acceleration = -1 * this.K * x - this.D * velocity;
+                    velocityRow[colNum] += this.roundDecimal(acceleration);
+                    velocityRow[colNum] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityRow[colNum]));
+                }
+            }
+        }
+        // TODO: refactor into utility
+
+    }, {
+        key: "roundDecimal",
+        value: function roundDecimal(num) {
+            return Math.round(num * 10000) / 10000;
+        }
+    }]);
+
+    return SpringModel;
+}();
+
+exports.SpringModel = SpringModel;
 
 /***/ })
 /******/ ]);

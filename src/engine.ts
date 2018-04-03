@@ -26,7 +26,10 @@ export class Engine {
 
   private heightMap: number[][]
   private velocityMap: number[][]
-  
+  // Ripple model.
+  private rippleHeightMap: number[][]
+  private rippleHeightMap_prev: number[][]
+
   private propagationModelBuffers: {
     leftDelta: number[][],
     rightDelta: number[][],
@@ -70,7 +73,7 @@ export class Engine {
     const texture = new THREE.TextureLoader().load( "textures/water.jpg")
     const geometry = new THREE.PlaneGeometry(this.PLANE_WIDTH, this.PLANE_HEIGHT, this.ROWS, this.COLUMNS)
     const material = new THREE.MeshPhongMaterial({
-      /// color: 0x00EEEE,
+      // color: 0x00EEEE,
       flatShading: true,
       shininess: 5,
       map: texture,
@@ -125,6 +128,42 @@ export class Engine {
   private iterate() {
     this.updateSpringModel()
     this.updatePropagationModel()
+
+    // TODO: Add floating point rounding method
+
+    // TODO: run this at half time step
+    // TODO: refactor into method
+    // Calculate Ripple Model
+    for(let i = 0; i < this.ROWS; i++) {
+      for(let j = 0 ; j <= this.COLUMNS ; j++) {
+        const elements = [
+          this.rippleHeightMap_prev[Math.min(i+1, this.ROWS)][j],
+          this.rippleHeightMap_prev[Math.max(i-1, 0)][j],
+          this.rippleHeightMap_prev[i][Math.max(j-1, 0)],
+          this.rippleHeightMap_prev[i][Math.min(this.ROWS-1, j+1)],
+          this.rippleHeightMap_prev[Math.min(i+1, this.ROWS)][Math.max(j-1, 0)],
+          this.rippleHeightMap_prev[Math.min(i+1, this.ROWS)][Math.min(this.ROWS-1, j+1)],
+          this.rippleHeightMap_prev[Math.max(i-1, 0)][Math.max(j-1, 0)],
+          this.rippleHeightMap_prev[Math.max(i-1, 0)][Math.min(this.ROWS-1, j+1)],
+        ]
+        // TODO: Don't give each each neighbor equal weight
+        this.rippleHeightMap[i][j] += (elements.reduce((total, num) => total + num) / 8) - this.rippleHeightMap_prev[i][j]
+        this.rippleHeightMap[i][j] *= .95
+      }
+    }
+    for(let i = 0; i < this.ROWS ; i++) {
+      for(let j = 0 ; j < this.COLUMNS ; j++) {
+        this.rippleHeightMap_prev[i][j] += this.rippleHeightMap[i][j]
+      }
+    }
+    for(let i = 0; i < this.ROWS ; i++) {
+      for(let j = 0 ; j < this.COLUMNS ; j++) {
+        // TODO: maybe don't merge. keep a separate springModel heightmap and a ripplemodel heightmap
+        // and render the matrix addition
+        this.heightMap[i][j] += this.rippleHeightMap[i][j]
+      }
+    }
+    // End ripple model
 
     this.applyHeightmapToGeometry()
     this.applyWavesToGeometry()
@@ -294,12 +333,18 @@ export class Engine {
     const numCols = this.COLUMNS + 1
     const heightMap = new Array(numRows);
     const velocityMap = new Array(numRows);
+    const rippleHeightMap = new Array(numRows);
+    const rippleHeightMap_prev = new Array(numRows)
     while(numRows--) {
       heightMap[numRows] = (new Array(numCols)).fill(0)
       velocityMap[numRows] = (new Array(numCols)).fill(0)
+      rippleHeightMap[numRows] = (new Array(numCols)).fill(0)
+      rippleHeightMap_prev[numRows] = (new Array(numCols)).fill(0)
     }
     this.heightMap = heightMap
     this.velocityMap = velocityMap
+    this.rippleHeightMap = rippleHeightMap
+    this.rippleHeightMap_prev = rippleHeightMap_prev
   }
 
   private initPropagationModel() {
@@ -411,7 +456,8 @@ export class Engine {
       // These are sequenced to match the vertices indexing.
       const columnIndex = Math.round(x / this.CELL_WIDTH) + (this.COLUMNS / 2);
       const rowIndex = -1 * Math.round(y / this.CELL_HEIGHT) + (this.ROWS / 2);
-      this.waves.push( new Wave({x: columnIndex, y: rowIndex}) )
+      // this.waves.push( new Wave({x: columnIndex, y: rowIndex}) )
+      this.applyImpression(rowIndex, columnIndex)
 
       this.iterate()
       // const points = this.getRasterizedCircle({x: rowIndex, y: columnIndex})
@@ -421,6 +467,14 @@ export class Engine {
       //   });
 
       // this.refreshGeometry()
+    }
+  }
+
+  private applyImpression(rowIndex, columnIndex) {
+    if(this.rippleHeightMap_prev[rowIndex][columnIndex] < 0) {
+      this.rippleHeightMap_prev[rowIndex][columnIndex] -= 10
+    } else {
+      this.rippleHeightMap_prev[rowIndex][columnIndex] += 10
     }
   }
 

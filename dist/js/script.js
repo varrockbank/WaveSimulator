@@ -90,7 +90,6 @@ var _createClass = function () { function defineProperties(target, props) { for 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var wave_1 = __webpack_require__(2);
 
 var Engine = function () {
     function Engine() {
@@ -132,7 +131,7 @@ var Engine = function () {
         var texture = new THREE.TextureLoader().load("textures/water.jpg");
         var geometry = new THREE.PlaneGeometry(this.PLANE_WIDTH, this.PLANE_HEIGHT, this.ROWS, this.COLUMNS);
         var material = new THREE.MeshPhongMaterial({
-            /// color: 0x00EEEE,
+            // color: 0x00EEEE,
             flatShading: true,
             shininess: 5,
             map: texture
@@ -180,6 +179,33 @@ var Engine = function () {
         value: function iterate() {
             this.updateSpringModel();
             this.updatePropagationModel();
+            // TODO: Add floating point rounding method
+            // TODO: run this at half time step
+            // TODO: refactor into method
+            // Calculate Ripple Model
+            for (var i = 0; i < this.ROWS; i++) {
+                for (var j = 0; j <= this.COLUMNS; j++) {
+                    var elements = [this.rippleHeightMap_prev[Math.min(i + 1, this.ROWS)][j], this.rippleHeightMap_prev[Math.max(i - 1, 0)][j], this.rippleHeightMap_prev[i][Math.max(j - 1, 0)], this.rippleHeightMap_prev[i][Math.min(this.ROWS - 1, j + 1)], this.rippleHeightMap_prev[Math.min(i + 1, this.ROWS)][Math.max(j - 1, 0)], this.rippleHeightMap_prev[Math.min(i + 1, this.ROWS)][Math.min(this.ROWS - 1, j + 1)], this.rippleHeightMap_prev[Math.max(i - 1, 0)][Math.max(j - 1, 0)], this.rippleHeightMap_prev[Math.max(i - 1, 0)][Math.min(this.ROWS - 1, j + 1)]];
+                    // TODO: Don't give each each neighbor equal weight
+                    this.rippleHeightMap[i][j] += elements.reduce(function (total, num) {
+                        return total + num;
+                    }) / 8 - this.rippleHeightMap_prev[i][j];
+                    this.rippleHeightMap[i][j] *= .95;
+                }
+            }
+            for (var _i = 0; _i < this.ROWS; _i++) {
+                for (var _j = 0; _j < this.COLUMNS; _j++) {
+                    this.rippleHeightMap_prev[_i][_j] += this.rippleHeightMap[_i][_j];
+                }
+            }
+            for (var _i2 = 0; _i2 < this.ROWS; _i2++) {
+                for (var _j2 = 0; _j2 < this.COLUMNS; _j2++) {
+                    // TODO: maybe don't merge. keep a separate springModel heightmap and a ripplemodel heightmap
+                    // and render the matrix addition
+                    this.heightMap[_i2][_j2] += this.rippleHeightMap[_i2][_j2];
+                }
+            }
+            // End ripple model
             this.applyHeightmapToGeometry();
             this.applyWavesToGeometry();
             this.digestGeometry();
@@ -267,19 +293,19 @@ var Engine = function () {
                 leftDelta[i] = leftDelta[i].fill(0);
                 rightDelta[i] = rightDelta[i].fill(0);
             }
-            for (var _i = 0; _i < this.COLUMNS + 1; _i++) {
-                topDelta[_i] = topDelta[_i].fill(0);
-                bottomDelta[_i] = bottomDelta[_i].fill(0);
+            for (var _i3 = 0; _i3 < this.COLUMNS + 1; _i3++) {
+                topDelta[_i3] = topDelta[_i3].fill(0);
+                bottomDelta[_i3] = bottomDelta[_i3].fill(0);
             }
             for (var l = 0; l < this.BACK_PROPAGATIONS; l++) {
                 // Horizontal propagation
-                for (var _i2 = 0; _i2 < heightMap.length; _i2++) {
-                    var heightRow = heightMap[_i2];
-                    var rowVelocity = velocityMap[_i2];
+                for (var _i4 = 0; _i4 < heightMap.length; _i4++) {
+                    var heightRow = heightMap[_i4];
+                    var rowVelocity = velocityMap[_i4];
                     // Left velocity propagation.
                     for (var j = 1; j < heightRow.length; j++) {
-                        leftDelta[_i2][j] = this.roundDecimal(this.S * (heightRow[j] - heightRow[j - 1]));
-                        rowVelocity[j] += leftDelta[_i2][j];
+                        leftDelta[_i4][j] = this.roundDecimal(this.S * (heightRow[j] - heightRow[j - 1]));
+                        rowVelocity[j] += leftDelta[_i4][j];
                         if (rowVelocity[j] < 0) {
                             rowVelocity[j] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(rowVelocity[j]));
                         } else if (rowVelocity[j] > 0) {
@@ -287,50 +313,50 @@ var Engine = function () {
                         }
                     }
                     // Right velocity propagation.
-                    for (var _j = 0; _j < heightRow.length - 1; _j++) {
-                        rightDelta[_i2][_j] = this.roundDecimal(this.S * (heightRow[_j] - heightRow[_j + 1]));
-                        rowVelocity[_j] += rightDelta[_i2][_j];
-                        if (rowVelocity[_j] < 0) {
-                            rowVelocity[_j] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(rowVelocity[_j]));
-                        } else if (rowVelocity[_j] > 0) {
-                            rowVelocity[_j] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(rowVelocity[_j]));
+                    for (var _j3 = 0; _j3 < heightRow.length - 1; _j3++) {
+                        rightDelta[_i4][_j3] = this.roundDecimal(this.S * (heightRow[_j3] - heightRow[_j3 + 1]));
+                        rowVelocity[_j3] += rightDelta[_i4][_j3];
+                        if (rowVelocity[_j3] < 0) {
+                            rowVelocity[_j3] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(rowVelocity[_j3]));
+                        } else if (rowVelocity[_j3] > 0) {
+                            rowVelocity[_j3] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(rowVelocity[_j3]));
                         }
                     }
                     // Left height propagation
-                    for (var _j2 = 1; _j2 < heightRow.length; _j2++) {
-                        heightMap[_i2][_j2 - 1] += leftDelta[_i2][_j2];
+                    for (var _j4 = 1; _j4 < heightRow.length; _j4++) {
+                        heightMap[_i4][_j4 - 1] += leftDelta[_i4][_j4];
                     }
                     // Right height propagation
-                    for (var _j3 = 0; _j3 < heightRow.length - 1; _j3++) {
-                        heightMap[_i2][_j3 + 1] += rightDelta[_i2][_j3];
+                    for (var _j5 = 0; _j5 < heightRow.length - 1; _j5++) {
+                        heightMap[_i4][_j5 + 1] += rightDelta[_i4][_j5];
                     }
                 }
                 // End Horizontal propagation.
                 // Vertical propagation.
-                for (var _j4 = 0; _j4 < heightMap[0].length; _j4++) {
-                    for (var _i3 = 1; _i3 < heightMap.length; _i3++) {
-                        topDelta[_i3][_j4] = this.roundDecimal(this.S * (heightMap[_i3][_j4] - heightMap[_i3 - 1][_j4]));
-                        velocityMap[_i3][_j4] += topDelta[_i3][_j4];
-                        if (velocityMap[_i3][_j4] < 0) {
-                            velocityMap[_i3][_j4] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[_i3][_j4]));
-                        } else if (velocityMap[_i3][_j4] > 0) {
-                            velocityMap[_i3][_j4] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[_i3][_j4]));
-                        }
-                    }
-                    for (var _i4 = 0; _i4 < heightMap.length - 1; _i4++) {
-                        bottomDelta[_i4][_j4] = this.S * (heightMap[_i4][_j4] - heightMap[_i4 + 1][_j4]);
-                        velocityMap[_i4][_j4] += bottomDelta[_i4][_j4];
-                        if (velocityMap[_i4][_j4] < 0) {
-                            velocityMap[_i4][_j4] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[_i4][_j4]));
-                        } else if (velocityMap[_i4][_j4] > 0) {
-                            velocityMap[_i4][_j4] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[_i4][_j4]));
-                        }
-                    }
+                for (var _j6 = 0; _j6 < heightMap[0].length; _j6++) {
                     for (var _i5 = 1; _i5 < heightMap.length; _i5++) {
-                        heightMap[_i5 - 1][_j4] += topDelta[_i5][_j4];
+                        topDelta[_i5][_j6] = this.roundDecimal(this.S * (heightMap[_i5][_j6] - heightMap[_i5 - 1][_j6]));
+                        velocityMap[_i5][_j6] += topDelta[_i5][_j6];
+                        if (velocityMap[_i5][_j6] < 0) {
+                            velocityMap[_i5][_j6] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[_i5][_j6]));
+                        } else if (velocityMap[_i5][_j6] > 0) {
+                            velocityMap[_i5][_j6] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[_i5][_j6]));
+                        }
                     }
                     for (var _i6 = 0; _i6 < heightMap.length - 1; _i6++) {
-                        heightMap[_i6 + 1][_j4] += bottomDelta[_i6][_j4];
+                        bottomDelta[_i6][_j6] = this.S * (heightMap[_i6][_j6] - heightMap[_i6 + 1][_j6]);
+                        velocityMap[_i6][_j6] += bottomDelta[_i6][_j6];
+                        if (velocityMap[_i6][_j6] < 0) {
+                            velocityMap[_i6][_j6] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[_i6][_j6]));
+                        } else if (velocityMap[_i6][_j6] > 0) {
+                            velocityMap[_i6][_j6] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[_i6][_j6]));
+                        }
+                    }
+                    for (var _i7 = 1; _i7 < heightMap.length; _i7++) {
+                        heightMap[_i7 - 1][_j6] += topDelta[_i7][_j6];
+                    }
+                    for (var _i8 = 0; _i8 < heightMap.length - 1; _i8++) {
+                        heightMap[_i8 + 1][_j6] += bottomDelta[_i8][_j6];
                     }
                 }
                 // End vertical propagation
@@ -355,12 +381,18 @@ var Engine = function () {
             var numCols = this.COLUMNS + 1;
             var heightMap = new Array(numRows);
             var velocityMap = new Array(numRows);
+            var rippleHeightMap = new Array(numRows);
+            var rippleHeightMap_prev = new Array(numRows);
             while (numRows--) {
                 heightMap[numRows] = new Array(numCols).fill(0);
                 velocityMap[numRows] = new Array(numCols).fill(0);
+                rippleHeightMap[numRows] = new Array(numCols).fill(0);
+                rippleHeightMap_prev[numRows] = new Array(numCols).fill(0);
             }
             this.heightMap = heightMap;
             this.velocityMap = velocityMap;
+            this.rippleHeightMap = rippleHeightMap;
+            this.rippleHeightMap_prev = rippleHeightMap_prev;
         }
     }, {
         key: "initPropagationModel",
@@ -373,9 +405,9 @@ var Engine = function () {
             }
             var topDelta = new Array(this.COLUMNS + 1);
             var bottomDelta = new Array(this.COLUMNS + 1);
-            for (var _i7 = 0; _i7 < this.COLUMNS + 1; _i7++) {
-                topDelta[_i7] = new Array(this.ROWS + 1).fill(0);
-                bottomDelta[_i7] = new Array(this.ROWS + 1).fill(0);
+            for (var _i9 = 0; _i9 < this.COLUMNS + 1; _i9++) {
+                topDelta[_i9] = new Array(this.ROWS + 1).fill(0);
+                bottomDelta[_i9] = new Array(this.ROWS + 1).fill(0);
             }
             this.propagationModelBuffers = {
                 leftDelta: leftDelta,
@@ -404,14 +436,14 @@ var Engine = function () {
                 heightMap[i][0] = _neighborHeight + this.getRandomDirection();
             }
             // Loop over inner cells, assigning height as +-1 from midpoint of top and left neighbor
-            for (var _i8 = 1; _i8 < numRows; _i8++) {
-                var row = heightMap[_i8];
-                var rowAbove = heightMap[_i8 - 1];
-                for (var _j5 = 1; _j5 < numCols; _j5++) {
-                    var topNeighbor = rowAbove[_j5];
-                    var leftNeighbor = row[_j5 - 1];
+            for (var _i10 = 1; _i10 < numRows; _i10++) {
+                var row = heightMap[_i10];
+                var rowAbove = heightMap[_i10 - 1];
+                for (var _j7 = 1; _j7 < numCols; _j7++) {
+                    var topNeighbor = rowAbove[_j7];
+                    var leftNeighbor = row[_j7 - 1];
                     var midpoint = (topNeighbor + leftNeighbor) / 2;
-                    heightMap[_i8][_j5] = Math.round(midpoint) + this.getRandomDirection();
+                    heightMap[_i10][_j7] = Math.round(midpoint) + this.getRandomDirection();
                 }
             }
             this.applyHeightmapToGeometry();
@@ -496,7 +528,8 @@ var Engine = function () {
 
                 var columnIndex = Math.round(_x / this.CELL_WIDTH) + this.COLUMNS / 2;
                 var rowIndex = -1 * Math.round(_y / this.CELL_HEIGHT) + this.ROWS / 2;
-                this.waves.push(new wave_1.Wave({ x: columnIndex, y: rowIndex }));
+                // this.waves.push( new Wave({x: columnIndex, y: rowIndex}) )
+                this.applyImpression(rowIndex, columnIndex);
                 this.iterate();
                 // const points = this.getRasterizedCircle({x: rowIndex, y: columnIndex})
                 // points.filter(({x, y}) => x >= 0 && x < this.COLUMNS && y >= 0 && y <= this.ROWS)
@@ -504,6 +537,15 @@ var Engine = function () {
                 //     this.heightMap[point.x][point.y] = point.z
                 //   });
                 // this.refreshGeometry()
+            }
+        }
+    }, {
+        key: "applyImpression",
+        value: function applyImpression(rowIndex, columnIndex) {
+            if (this.rippleHeightMap_prev[rowIndex][columnIndex] < 0) {
+                this.rippleHeightMap_prev[rowIndex][columnIndex] -= 10;
+            } else {
+                this.rippleHeightMap_prev[rowIndex][columnIndex] += 10;
             }
         }
     }, {
@@ -574,143 +616,6 @@ var Engine = function () {
 }();
 
 exports.Engine = Engine;
-
-/***/ }),
-/* 2 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-Object.defineProperty(exports, "__esModule", { value: true });
-/**
- * A wave is represented as a time sequenced set of height impressions relative to an epicenter.
- * This implementation uses pre-determined static values for the sequence.
- * The alternative is modeling the wave as a sum of forces eminating from the epicenter
- * which reduces down to some mass constant and acceleration vectors, and dynamically updating
- * the system. This is computationally expensive and tricky to get a good model, especially
- * in a discrete space lacking sufficient granularity. Plus, this computation is mostly
- * deterministic, give or take floating point errors, for some given mass M and the fact that
- * center-of-mass for the wave is fixed relative to the outer system. A convenient heuristic to
- * keep in mind is that this force, atleast in the abstract, should be conservative. In other words,
- * whatever implementation, static or dynamic, should ensure the total force does not increase,
- * as this will ensure the simulation to diverges.
- */
-
-var Wave = function () {
-    function Wave(epicenter) {
-        _classCallCheck(this, Wave);
-
-        this.epicenter = epicenter;
-        this.stage = 0;
-        this.states = [[{
-            x_offset: 0,
-            y_offset: 0,
-            z: 10
-        }], [{
-            x_offset: -1,
-            y_offset: 0,
-            z: 5
-        }, {
-            x_offset: 1,
-            y_offset: 0,
-            z: 5
-        }, {
-            x_offset: 0,
-            y_offset: 1,
-            z: 5
-        }, {
-            x_offset: 0,
-            y_offset: -1,
-            z: 5
-        }], [{
-            x_offset: -1,
-            y_offset: -1,
-            z: 3
-        }, {
-            x_offset: 1,
-            y_offset: 1,
-            z: 3
-        }, {
-            x_offset: -1,
-            y_offset: 1,
-            z: 3
-        }, {
-            x_offset: 1,
-            y_offset: -1,
-            z: 3
-        }], [{
-            x_offset: -1,
-            y_offset: -2,
-            z: 1
-        }, {
-            x_offset: 1,
-            y_offset: -2,
-            z: 1
-        }, {
-            x_offset: -1,
-            y_offset: 2,
-            z: 1
-        }, {
-            x_offset: 1,
-            y_offset: 2,
-            z: 1
-        }, {
-            x_offset: -2,
-            y_offset: -1,
-            z: 1
-        }, {
-            x_offset: -2,
-            y_offset: 1,
-            z: 1
-        }, {
-            x_offset: 2,
-            y_offset: -1,
-            z: 1
-        }, {
-            x_offset: 2,
-            y_offset: 1,
-            z: 1
-        }]];
-        this.numStates = this.states.length;
-    }
-
-    _createClass(Wave, [{
-        key: "getPoints",
-        value: function getPoints() {
-            var _epicenter = this.epicenter,
-                x = _epicenter.x,
-                y = _epicenter.y;
-
-            var state = this.states[this.stage];
-            return !state ? [] : state.map(function (relativePoint) {
-                return {
-                    x: x + relativePoint.x_offset,
-                    y: y + relativePoint.y_offset,
-                    z: relativePoint.z
-                };
-            });
-        }
-        /**
-         * @return Whether reached end of lifecycle.
-         */
-
-    }, {
-        key: "step",
-        value: function step() {
-            this.stage++;
-            return this.stage >= this.numStates;
-        }
-    }]);
-
-    return Wave;
-}();
-
-exports.Wave = Wave;
 
 /***/ })
 /******/ ]);

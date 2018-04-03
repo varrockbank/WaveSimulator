@@ -432,13 +432,6 @@ export class Engine {
       this.rippleModel.applyImpression(rowIndex, columnIndex)
 
       this.iterate()
-      // const points = this.getRasterizedCircle({x: rowIndex, y: columnIndex})
-      // points.filter(({x, y}) => x >= 0 && x < this.COLUMNS && y >= 0 && y <= this.ROWS)
-      //   .forEach(point => {
-      //     this.heightMap[point.x][point.y] = point.z
-      //   });
-
-      // this.refreshGeometry()
     }
   }
 
@@ -448,57 +441,5 @@ export class Engine {
     if(index > maxIndex)
       return -1
     return index;
-  }
-
-  // TODO: Use midpoint circle algorithm
-  private getRasterizedCircle(center: Point): Point[] {
-    const summit = 6
-    const points = []
-    points.push({
-      x: center.x,
-      y: center.y,
-      z: summit
-    })
-    points.push({
-      x: center.x - 1,
-      y: center.y,
-      z: summit - 1
-    })
-    points.push({
-      x: center.x + 1,
-      y: center.y,
-      z: summit - 1
-    })
-    points.push({
-      x: center.x,
-      y: center.y - 1,
-      z: summit - 1
-    })
-    points.push({
-      x: center.x,
-      y: center.y + 1,
-      z: summit - 1
-    })
-    points.push({
-      x: center.x - 1,
-      y: center.y - 1,
-      z: summit - 2
-    })
-    points.push({
-      x: center.x + 1,
-      y: center.y + 1,
-      z: summit - 2
-    })
-    points.push({
-      x: center.x - 1,
-      y: center.y + 1,
-      z: summit - 2
-    })
-    points.push({
-      x: center.x + 1,
-      y: center.y - 1,
-      z: summit - 2
-    })
-    return points
   }
 }

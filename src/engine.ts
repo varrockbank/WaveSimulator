@@ -1,5 +1,5 @@
 import { Wave } from "./wave"
-import { RippleModel } from "./ripple"
+import { RippleModel } from "./ripple_model"
 import { PropagationSpringModel } from "./propagation_spring_model"
 
 interface Point {

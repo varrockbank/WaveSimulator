@@ -90,8 +90,8 @@ var _createClass = function () { function defineProperties(target, props) { for 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var ripple_1 = __webpack_require__(2);
-var propagation_spring_model_1 = __webpack_require__(4);
+var ripple_model_1 = __webpack_require__(4);
+var propagation_spring_model_1 = __webpack_require__(2);
 var EVENT_KEYS = {
     ITERATE: 'x',
     RUN: 'y',
@@ -143,7 +143,7 @@ var Engine = function () {
         this.addEventListeners();
         this.propagationSpringModel = new propagation_spring_model_1.PropagationSpringModel(this.ROWS, this.COLUMNS);
         this.initRandomHeightmap();
-        this.rippleModel = new ripple_1.RippleModel(this.ROWS, this.COLUMNS);
+        this.rippleModel = new ripple_model_1.RippleModel(this.ROWS, this.COLUMNS);
         this.renderer.gammaInput = true;
         this.renderer.gammaOutput = true;
         this.renderer.shadowMap.enabled = true;
@@ -391,161 +391,6 @@ exports.Engine = Engine;
 
 "use strict";
 
-/**
- * A heightfield based ripple model which updates points with average of neighbors from previous
- * iteration + delta from previous iteration.
- *
- * Reference: http://matthias-mueller-fischer.ch/talks/GDC2008.pdf
- */
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-Object.defineProperty(exports, "__esModule", { value: true });
-
-var RippleModel = function () {
-    function RippleModel(ROWS, COLUMNS) {
-        _classCallCheck(this, RippleModel);
-
-        this.ROWS = ROWS;
-        this.COLUMNS = COLUMNS;
-        var numRows = ROWS + 1;
-        var rippleHeightMap = new Array(ROWS);
-        var rippleHeightMap_prev = new Array(ROWS);
-        while (numRows--) {
-            rippleHeightMap[numRows] = new Array(COLUMNS + 1).fill(0);
-            rippleHeightMap_prev[numRows] = new Array(COLUMNS + 1).fill(0);
-        }
-        this.rippleHeightMap = rippleHeightMap;
-        this.rippleHeightMap_prev = rippleHeightMap_prev;
-    }
-
-    _createClass(RippleModel, [{
-        key: "iterate",
-        value: function iterate() {
-            // TODO: inspect these loop indexes. seem to be off by 1.
-            for (var i = 0; i < this.ROWS; i++) {
-                for (var j = 0; j <= this.COLUMNS; j++) {
-                    var elements = [this.rippleHeightMap_prev[Math.min(i + 1, this.ROWS)][j], this.rippleHeightMap_prev[Math.max(i - 1, 0)][j], this.rippleHeightMap_prev[i][Math.max(j - 1, 0)], this.rippleHeightMap_prev[i][Math.min(this.ROWS - 1, j + 1)], this.rippleHeightMap_prev[Math.min(i + 1, this.ROWS)][Math.max(j - 1, 0)], this.rippleHeightMap_prev[Math.min(i + 1, this.ROWS)][Math.min(this.ROWS - 1, j + 1)], this.rippleHeightMap_prev[Math.max(i - 1, 0)][Math.max(j - 1, 0)], this.rippleHeightMap_prev[Math.max(i - 1, 0)][Math.min(this.ROWS - 1, j + 1)]];
-                    // TODO: Don't give each each neighbor equal weight
-                    this.rippleHeightMap[i][j] += elements.reduce(function (total, num) {
-                        return total + num;
-                    }) / 8 - this.rippleHeightMap_prev[i][j];
-                    this.rippleHeightMap[i][j] *= .95;
-                }
-            }
-            for (var _i = 0; _i < this.ROWS; _i++) {
-                for (var _j = 0; _j < this.COLUMNS; _j++) {
-                    this.rippleHeightMap_prev[_i][_j] += this.rippleHeightMap[_i][_j];
-                }
-            }
-        }
-    }, {
-        key: "getHeightMap",
-        value: function getHeightMap() {
-            return this.rippleHeightMap;
-        }
-    }, {
-        key: "applyImpression",
-        value: function applyImpression(rowIndex, columnIndex) {
-            if (this.rippleHeightMap_prev[rowIndex][columnIndex] < 0) {
-                this.rippleHeightMap_prev[rowIndex][columnIndex] -= 10;
-            } else {
-                this.rippleHeightMap_prev[rowIndex][columnIndex] += 10;
-            }
-        }
-    }]);
-
-    return RippleModel;
-}();
-
-exports.RippleModel = RippleModel;
-
-/***/ }),
-/* 3 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-/**
- * Models as water surface as springs along the z-axis.
- *
- * Lower dimensional variant: https://gamedevelopment.tutsplus.com/tutorials/make-a-splash-with-dynamic-2d-water-effects--gamedev-236
- */
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-Object.defineProperty(exports, "__esModule", { value: true });
-
-var SpringModel = function () {
-    function SpringModel(ROWS, COLUMNS) {
-        _classCallCheck(this, SpringModel);
-
-        this.ROWS = ROWS;
-        this.COLUMNS = COLUMNS;
-        // Physics parameters.
-        this.K = 0.03; // "Hooke's constant"
-        this.D = 0.025; // Dampening Factor
-        this.TERMINAL_VELOCITY = 1.5;
-        var numRows = this.ROWS + 1;
-        var numCols = this.COLUMNS + 1;
-        var heightMap = new Array(numRows);
-        var velocityMap = new Array(numRows);
-        while (numRows--) {
-            heightMap[numRows] = new Array(numCols).fill(0);
-            velocityMap[numRows] = new Array(numCols).fill(0);
-        }
-        this.heightMap = heightMap;
-        this.velocityMap = velocityMap;
-    }
-
-    _createClass(SpringModel, [{
-        key: "iterate",
-        value: function iterate() {
-            var heightMap = this.heightMap;
-            var velocityMap = this.velocityMap;
-            console.assert(heightMap.length == velocityMap.length);
-            var rowNum = heightMap.length;
-            while (rowNum--) {
-                var heightRow = heightMap[rowNum];
-                var velocityRow = velocityMap[rowNum];
-                console.assert(heightRow.length == velocityRow.length);
-                var colNum = heightRow.length;
-                while (colNum--) {
-                    var velocity = velocityRow[colNum];
-                    heightRow[colNum] += velocity;
-                    var targetHeight = 0;
-                    var height = heightRow[colNum];
-                    var x = height - targetHeight;
-                    var acceleration = -1 * this.K * x - this.D * velocity;
-                    velocityRow[colNum] += this.roundDecimal(acceleration);
-                    velocityRow[colNum] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityRow[colNum]));
-                }
-            }
-        }
-        // TODO: refactor into utility
-
-    }, {
-        key: "roundDecimal",
-        value: function roundDecimal(num) {
-            return Math.round(num * 10000) / 10000;
-        }
-    }]);
-
-    return SpringModel;
-}();
-
-exports.SpringModel = SpringModel;
-
-/***/ }),
-/* 4 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
@@ -681,6 +526,161 @@ var PropagationSpringModel = function (_spring_model_1$Sprin) {
 }(spring_model_1.SpringModel);
 
 exports.PropagationSpringModel = PropagationSpringModel;
+
+/***/ }),
+/* 3 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+/**
+ * Models as water surface as springs along the z-axis.
+ *
+ * Lower dimensional variant: https://gamedevelopment.tutsplus.com/tutorials/make-a-splash-with-dynamic-2d-water-effects--gamedev-236
+ */
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+Object.defineProperty(exports, "__esModule", { value: true });
+
+var SpringModel = function () {
+    function SpringModel(ROWS, COLUMNS) {
+        _classCallCheck(this, SpringModel);
+
+        this.ROWS = ROWS;
+        this.COLUMNS = COLUMNS;
+        // Physics parameters.
+        this.K = 0.03; // "Hooke's constant"
+        this.D = 0.025; // Dampening Factor
+        this.TERMINAL_VELOCITY = 1.5;
+        var numRows = this.ROWS + 1;
+        var numCols = this.COLUMNS + 1;
+        var heightMap = new Array(numRows);
+        var velocityMap = new Array(numRows);
+        while (numRows--) {
+            heightMap[numRows] = new Array(numCols).fill(0);
+            velocityMap[numRows] = new Array(numCols).fill(0);
+        }
+        this.heightMap = heightMap;
+        this.velocityMap = velocityMap;
+    }
+
+    _createClass(SpringModel, [{
+        key: "iterate",
+        value: function iterate() {
+            var heightMap = this.heightMap;
+            var velocityMap = this.velocityMap;
+            console.assert(heightMap.length == velocityMap.length);
+            var rowNum = heightMap.length;
+            while (rowNum--) {
+                var heightRow = heightMap[rowNum];
+                var velocityRow = velocityMap[rowNum];
+                console.assert(heightRow.length == velocityRow.length);
+                var colNum = heightRow.length;
+                while (colNum--) {
+                    var velocity = velocityRow[colNum];
+                    heightRow[colNum] += velocity;
+                    var targetHeight = 0;
+                    var height = heightRow[colNum];
+                    var x = height - targetHeight;
+                    var acceleration = -1 * this.K * x - this.D * velocity;
+                    velocityRow[colNum] += this.roundDecimal(acceleration);
+                    velocityRow[colNum] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityRow[colNum]));
+                }
+            }
+        }
+        // TODO: refactor into utility
+
+    }, {
+        key: "roundDecimal",
+        value: function roundDecimal(num) {
+            return Math.round(num * 10000) / 10000;
+        }
+    }]);
+
+    return SpringModel;
+}();
+
+exports.SpringModel = SpringModel;
+
+/***/ }),
+/* 4 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+/**
+ * A heightfield based ripple model which updates points with average of neighbors from previous
+ * iteration + delta from previous iteration.
+ *
+ * Reference: http://matthias-mueller-fischer.ch/talks/GDC2008.pdf
+ */
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+Object.defineProperty(exports, "__esModule", { value: true });
+
+var RippleModel = function () {
+    function RippleModel(ROWS, COLUMNS) {
+        _classCallCheck(this, RippleModel);
+
+        this.ROWS = ROWS;
+        this.COLUMNS = COLUMNS;
+        var numRows = ROWS + 1;
+        var rippleHeightMap = new Array(ROWS);
+        var rippleHeightMap_prev = new Array(ROWS);
+        while (numRows--) {
+            rippleHeightMap[numRows] = new Array(COLUMNS + 1).fill(0);
+            rippleHeightMap_prev[numRows] = new Array(COLUMNS + 1).fill(0);
+        }
+        this.rippleHeightMap = rippleHeightMap;
+        this.rippleHeightMap_prev = rippleHeightMap_prev;
+    }
+
+    _createClass(RippleModel, [{
+        key: "iterate",
+        value: function iterate() {
+            // TODO: inspect these loop indexes. seem to be off by 1.
+            for (var i = 0; i < this.ROWS; i++) {
+                for (var j = 0; j <= this.COLUMNS; j++) {
+                    var elements = [this.rippleHeightMap_prev[Math.min(i + 1, this.ROWS)][j], this.rippleHeightMap_prev[Math.max(i - 1, 0)][j], this.rippleHeightMap_prev[i][Math.max(j - 1, 0)], this.rippleHeightMap_prev[i][Math.min(this.ROWS - 1, j + 1)], this.rippleHeightMap_prev[Math.min(i + 1, this.ROWS)][Math.max(j - 1, 0)], this.rippleHeightMap_prev[Math.min(i + 1, this.ROWS)][Math.min(this.ROWS - 1, j + 1)], this.rippleHeightMap_prev[Math.max(i - 1, 0)][Math.max(j - 1, 0)], this.rippleHeightMap_prev[Math.max(i - 1, 0)][Math.min(this.ROWS - 1, j + 1)]];
+                    // TODO: Don't give each each neighbor equal weight
+                    this.rippleHeightMap[i][j] += elements.reduce(function (total, num) {
+                        return total + num;
+                    }) / 8 - this.rippleHeightMap_prev[i][j];
+                    this.rippleHeightMap[i][j] *= .95;
+                }
+            }
+            for (var _i = 0; _i < this.ROWS; _i++) {
+                for (var _j = 0; _j < this.COLUMNS; _j++) {
+                    this.rippleHeightMap_prev[_i][_j] += this.rippleHeightMap[_i][_j];
+                }
+            }
+        }
+    }, {
+        key: "getHeightMap",
+        value: function getHeightMap() {
+            return this.rippleHeightMap;
+        }
+    }, {
+        key: "applyImpression",
+        value: function applyImpression(rowIndex, columnIndex) {
+            if (this.rippleHeightMap_prev[rowIndex][columnIndex] < 0) {
+                this.rippleHeightMap_prev[rowIndex][columnIndex] -= 10;
+            } else {
+                this.rippleHeightMap_prev[rowIndex][columnIndex] += 10;
+            }
+        }
+    }]);
+
+    return RippleModel;
+}();
+
+exports.RippleModel = RippleModel;
 
 /***/ })
 /******/ ]);

@@ -1,6 +1,6 @@
 import { Wave } from "./wave"
 import { RippleModel } from "./ripple"
-import { SpringModel } from "./spring_model"
+import { PropagationSpringModel } from "./propagation_spring_model"
 
 interface Point {
   x: number,
@@ -12,11 +12,6 @@ export class Engine {
   private width = window.innerWidth
   private height = window.innerHeight
 
-  // Physics parameters.
-  private S = 0.0005 // Wave spread.
-  private BACK_PROPAGATIONS = 4
-  private TERMINAL_VELOCITY = 1.5
-
   private readonly ROWS = 50
   private readonly COLUMNS = 50
   private readonly PLANE_WIDTH = 100
@@ -24,15 +19,8 @@ export class Engine {
   private readonly CELL_HEIGHT = this.PLANE_HEIGHT / this.ROWS
   private readonly CELL_WIDTH = this.PLANE_WIDTH / this.COLUMNS
 
-  private springModel: SpringModel
+  private propagationSpringModel: PropagationSpringModel
   private rippleModel: RippleModel
-
-  private propagationModelBuffers: {
-    leftDelta: number[][],
-    rightDelta: number[][],
-    topDelta: number[][],
-    bottomDelta: number[][],
-  }
 
   // Key press to trigger a simulation cycle.
   private readonly ITERATION_TRIGGER_KEY = 'x';
@@ -89,8 +77,7 @@ export class Engine {
 
     this.addEventListeners()
 
-    this.springModel = new SpringModel(this.ROWS, this.COLUMNS)
-    this.initPropagationModel()
+    this.propagationSpringModel = new PropagationSpringModel(this.ROWS, this.COLUMNS)
     this.initRandomHeightmap()
     this.rippleModel = new RippleModel(this.ROWS, this.COLUMNS)
 
@@ -124,8 +111,8 @@ export class Engine {
   }
 
   private iterate() {
-    this.springModel.iterate()
-    this.updatePropagationModel()
+    this.propagationSpringModel.iterate()
+    this.propagationSpringModel.iteratePropagation()
 
     // TODO: Add floating point rounding method
 
@@ -136,7 +123,7 @@ export class Engine {
       for(let j = 0 ; j < this.COLUMNS ; j++) {
         // TODO: maybe don't merge. keep a separate springModel heightmap and a ripplemodel heightmap
         // and render the matrix addition
-        this.springModel.heightMap[i][j] += rippleHeightMap[i][j]
+        this.propagationSpringModel.heightMap[i][j] += rippleHeightMap[i][j]
       }
     }
 
@@ -147,13 +134,13 @@ export class Engine {
   }
 
   private applyHeightmapToGeometry() {
-    const heightMap = this.springModel.heightMap
+    const heightMap = this.propagationSpringModel.heightMap
     let rowNum = heightMap.length
     while(rowNum--) {
       const row = heightMap[rowNum]
       let colNum = row.length
       while(colNum--) {
-        const height = this.springModel.heightMap[rowNum][colNum]
+        const height = this.propagationSpringModel.heightMap[rowNum][colNum]
         const verticeIndex = this.getVerticeIndex(rowNum, colNum)
         this.updateVertex(verticeIndex, height)
       }
@@ -171,7 +158,7 @@ export class Engine {
         const verticeIndex = this.getVerticeIndex(y, x)
         // Avoid wave points outside boundary plane.
         if(verticeIndex >= 0) {
-          const currHeight = this.springModel.heightMap[y][x]
+          const currHeight = this.propagationSpringModel.heightMap[y][x]
           const aggregate = z + currHeight
           this.updateVertex(verticeIndex, aggregate)
         }
@@ -183,125 +170,14 @@ export class Engine {
     }
   }
 
-  private updatePropagationModel() {
-    const heightMap = this.springModel.heightMap
-    const velocityMap = this.springModel.velocityMap
-
-    const {
-      leftDelta,
-      rightDelta,
-      topDelta,
-      bottomDelta,
-    } = this.propagationModelBuffers
-    // Clear deltas.
-    for(let i = 0 ; i < this.ROWS + 1; i++) {
-      leftDelta[i] = leftDelta[i].fill(0)
-      rightDelta[i] = rightDelta[i].fill(0)
-    }
-    for(let i = 0 ; i < this.COLUMNS + 1; i++) {
-      topDelta[i] = topDelta[i].fill(0)
-      bottomDelta[i] = bottomDelta[i].fill(0)
-    }
-
-    for(let l = 0 ; l < this.BACK_PROPAGATIONS; l++) {
-      // Horizontal propagation
-      for(let i = 0 ; i < heightMap.length; i++) {
-        const heightRow = heightMap[i]
-        const rowVelocity = velocityMap[i]
-        // Left velocity propagation.
-        for(let j = 1; j < heightRow.length; j++) {
-          leftDelta[i][j] = this.roundDecimal(this.S * (heightRow[j] - heightRow[j-1]))
-          rowVelocity[j] += leftDelta[i][j]
-          if(rowVelocity[j] < 0 ) {
-            rowVelocity[j] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(rowVelocity[j]))            
-          } else if (rowVelocity[j] > 0 ) {
-            rowVelocity[j] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(rowVelocity[j]))
-          }
-        }
-        // Right velocity propagation.
-        for(let j = 0; j < heightRow.length - 1; j++) {
-          rightDelta[i][j] = this.roundDecimal(this.S * (heightRow[j] - heightRow[j+1]))
-          rowVelocity[j] += rightDelta[i][j]
-          if(rowVelocity[j] < 0 ) {
-            rowVelocity[j] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(rowVelocity[j]))
-          } else if (rowVelocity[j] > 0 ) {
-            rowVelocity[j] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(rowVelocity[j]))
-          }
-        }
-        // Left height propagation
-        for(let j = 1; j < heightRow.length; j++) {
-          heightMap[i][j-1] += leftDelta[i][j]
-        }
-        // Right height propagation
-        for(let j = 0; j < heightRow.length - 1; j++) {
-          heightMap[i][j+1] += rightDelta[i][j]
-        }
-      }
-      // End Horizontal propagation.
-      // Vertical propagation.
-      for(let j = 0 ; j < heightMap[0].length; j++) {
-        for(let i = 1; i < heightMap.length; i++) {
-          topDelta[i][j] = this.roundDecimal(this.S * ( heightMap[i][j] - heightMap[i-1][j] ))
-          velocityMap[i][j] += topDelta[i][j]
-          if(velocityMap[i][j] < 0) {
-            velocityMap[i][j] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[i][j]))            
-          } else if (velocityMap[i][j] > 0) {
-            velocityMap[i][j] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[i][j]))            
-          }
-        }
-        for(let i = 0; i < heightMap.length - 1; i++) {
-          bottomDelta[i][j] = this.S * ( heightMap[i][j] - heightMap[i+1][j] )
-          velocityMap[i][j] += bottomDelta[i][j]
-          if(velocityMap[i][j] < 0) {
-            velocityMap[i][j] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[i][j]))            
-          } else if (velocityMap[i][j] > 0) {
-            velocityMap[i][j] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[i][j]))            
-          }
-        }
-        for(let i = 1; i < heightMap.length; i++) {
-          heightMap[i-1][j] += topDelta[i][j]
-        }
-        for(let i = 0; i < heightMap.length - 1; i++) {
-          heightMap[i+1][j] += bottomDelta[i][j]
-        }
-      }
-      // End vertical propagation
-    }
-  }
-
   /** Return -1, 0, 1 */
   private getRandomDirection(): number{
     return  Math.floor(3 * Math.random()) - 1
   }
-  
-  private roundDecimal(num) {
-    return Math.round(num * 10000) / 10000
-  }
-
-  private initPropagationModel() {
-    const leftDelta = new Array(this.ROWS + 1);
-    const rightDelta = new Array(this.ROWS + 1);
-    for(let i = 0 ; i < this.ROWS + 1; i++) {
-      leftDelta[i] = (new Array(this.COLUMNS + 1)).fill(0)
-      rightDelta[i] = (new Array(this.COLUMNS + 1)).fill(0)
-    }
-    const topDelta = new Array(this.COLUMNS + 1);
-    const bottomDelta = new Array(this.COLUMNS + 1);
-    for(let i = 0 ; i < this.COLUMNS + 1; i++) {
-      topDelta[i] = (new Array(this.ROWS + 1)).fill(0)
-      bottomDelta[i] = (new Array(this.ROWS + 1)).fill(0)
-    }
-    this.propagationModelBuffers = {
-      leftDelta,
-      rightDelta,
-      topDelta,
-      bottomDelta
-    }
-  }
 
   private initRandomHeightmap() {
     // TODO: decouple the engine's heightmap from spring model.
-    const heightMap = this.springModel.heightMap
+    const heightMap = this.propagationSpringModel.heightMap
     const numCols = this.COLUMNS + 1
     const numRows = this.ROWS + 1
     // Seed the first cell.

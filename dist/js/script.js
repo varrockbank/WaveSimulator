@@ -91,7 +91,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 Object.defineProperty(exports, "__esModule", { value: true });
 var ripple_1 = __webpack_require__(2);
-var spring_model_1 = __webpack_require__(3);
+var propagation_spring_model_1 = __webpack_require__(4);
 
 var Engine = function () {
     function Engine() {
@@ -99,10 +99,6 @@ var Engine = function () {
 
         this.width = window.innerWidth;
         this.height = window.innerHeight;
-        // Physics parameters.
-        this.S = 0.0005; // Wave spread.
-        this.BACK_PROPAGATIONS = 4;
-        this.TERMINAL_VELOCITY = 1.5;
         this.ROWS = 50;
         this.COLUMNS = 50;
         this.PLANE_WIDTH = 100;
@@ -144,8 +140,7 @@ var Engine = function () {
         this.scene.add(axes);
         this.animate();
         this.addEventListeners();
-        this.springModel = new spring_model_1.SpringModel(this.ROWS, this.COLUMNS);
-        this.initPropagationModel();
+        this.propagationSpringModel = new propagation_spring_model_1.PropagationSpringModel(this.ROWS, this.COLUMNS);
         this.initRandomHeightmap();
         this.rippleModel = new ripple_1.RippleModel(this.ROWS, this.COLUMNS);
         this.renderer.gammaInput = true;
@@ -177,8 +172,8 @@ var Engine = function () {
     _createClass(Engine, [{
         key: "iterate",
         value: function iterate() {
-            this.springModel.iterate();
-            this.updatePropagationModel();
+            this.propagationSpringModel.iterate();
+            this.propagationSpringModel.iteratePropagation();
             // TODO: Add floating point rounding method
             // TODO: run this at half time step
             this.rippleModel.iterate();
@@ -187,7 +182,7 @@ var Engine = function () {
                 for (var j = 0; j < this.COLUMNS; j++) {
                     // TODO: maybe don't merge. keep a separate springModel heightmap and a ripplemodel heightmap
                     // and render the matrix addition
-                    this.springModel.heightMap[i][j] += rippleHeightMap[i][j];
+                    this.propagationSpringModel.heightMap[i][j] += rippleHeightMap[i][j];
                 }
             }
             this.applyHeightmapToGeometry();
@@ -197,13 +192,13 @@ var Engine = function () {
     }, {
         key: "applyHeightmapToGeometry",
         value: function applyHeightmapToGeometry() {
-            var heightMap = this.springModel.heightMap;
+            var heightMap = this.propagationSpringModel.heightMap;
             var rowNum = heightMap.length;
             while (rowNum--) {
                 var row = heightMap[rowNum];
                 var colNum = row.length;
                 while (colNum--) {
-                    var height = this.springModel.heightMap[rowNum][colNum];
+                    var height = this.propagationSpringModel.heightMap[rowNum][colNum];
                     var verticeIndex = this.getVerticeIndex(rowNum, colNum);
                     this.updateVertex(verticeIndex, height);
                 }
@@ -226,7 +221,7 @@ var Engine = function () {
                     var verticeIndex = this.getVerticeIndex(y, x);
                     // Avoid wave points outside boundary plane.
                     if (verticeIndex >= 0) {
-                        var currHeight = this.springModel.heightMap[y][x];
+                        var currHeight = this.propagationSpringModel.heightMap[y][x];
                         var aggregate = z + currHeight;
                         this.updateVertex(verticeIndex, aggregate);
                     }
@@ -237,91 +232,6 @@ var Engine = function () {
                 }
             }
         }
-    }, {
-        key: "updatePropagationModel",
-        value: function updatePropagationModel() {
-            var heightMap = this.springModel.heightMap;
-            var velocityMap = this.springModel.velocityMap;
-            var _propagationModelBuff = this.propagationModelBuffers,
-                leftDelta = _propagationModelBuff.leftDelta,
-                rightDelta = _propagationModelBuff.rightDelta,
-                topDelta = _propagationModelBuff.topDelta,
-                bottomDelta = _propagationModelBuff.bottomDelta;
-            // Clear deltas.
-
-            for (var i = 0; i < this.ROWS + 1; i++) {
-                leftDelta[i] = leftDelta[i].fill(0);
-                rightDelta[i] = rightDelta[i].fill(0);
-            }
-            for (var _i = 0; _i < this.COLUMNS + 1; _i++) {
-                topDelta[_i] = topDelta[_i].fill(0);
-                bottomDelta[_i] = bottomDelta[_i].fill(0);
-            }
-            for (var l = 0; l < this.BACK_PROPAGATIONS; l++) {
-                // Horizontal propagation
-                for (var _i2 = 0; _i2 < heightMap.length; _i2++) {
-                    var heightRow = heightMap[_i2];
-                    var rowVelocity = velocityMap[_i2];
-                    // Left velocity propagation.
-                    for (var j = 1; j < heightRow.length; j++) {
-                        leftDelta[_i2][j] = this.roundDecimal(this.S * (heightRow[j] - heightRow[j - 1]));
-                        rowVelocity[j] += leftDelta[_i2][j];
-                        if (rowVelocity[j] < 0) {
-                            rowVelocity[j] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(rowVelocity[j]));
-                        } else if (rowVelocity[j] > 0) {
-                            rowVelocity[j] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(rowVelocity[j]));
-                        }
-                    }
-                    // Right velocity propagation.
-                    for (var _j = 0; _j < heightRow.length - 1; _j++) {
-                        rightDelta[_i2][_j] = this.roundDecimal(this.S * (heightRow[_j] - heightRow[_j + 1]));
-                        rowVelocity[_j] += rightDelta[_i2][_j];
-                        if (rowVelocity[_j] < 0) {
-                            rowVelocity[_j] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(rowVelocity[_j]));
-                        } else if (rowVelocity[_j] > 0) {
-                            rowVelocity[_j] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(rowVelocity[_j]));
-                        }
-                    }
-                    // Left height propagation
-                    for (var _j2 = 1; _j2 < heightRow.length; _j2++) {
-                        heightMap[_i2][_j2 - 1] += leftDelta[_i2][_j2];
-                    }
-                    // Right height propagation
-                    for (var _j3 = 0; _j3 < heightRow.length - 1; _j3++) {
-                        heightMap[_i2][_j3 + 1] += rightDelta[_i2][_j3];
-                    }
-                }
-                // End Horizontal propagation.
-                // Vertical propagation.
-                for (var _j4 = 0; _j4 < heightMap[0].length; _j4++) {
-                    for (var _i3 = 1; _i3 < heightMap.length; _i3++) {
-                        topDelta[_i3][_j4] = this.roundDecimal(this.S * (heightMap[_i3][_j4] - heightMap[_i3 - 1][_j4]));
-                        velocityMap[_i3][_j4] += topDelta[_i3][_j4];
-                        if (velocityMap[_i3][_j4] < 0) {
-                            velocityMap[_i3][_j4] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[_i3][_j4]));
-                        } else if (velocityMap[_i3][_j4] > 0) {
-                            velocityMap[_i3][_j4] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[_i3][_j4]));
-                        }
-                    }
-                    for (var _i4 = 0; _i4 < heightMap.length - 1; _i4++) {
-                        bottomDelta[_i4][_j4] = this.S * (heightMap[_i4][_j4] - heightMap[_i4 + 1][_j4]);
-                        velocityMap[_i4][_j4] += bottomDelta[_i4][_j4];
-                        if (velocityMap[_i4][_j4] < 0) {
-                            velocityMap[_i4][_j4] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[_i4][_j4]));
-                        } else if (velocityMap[_i4][_j4] > 0) {
-                            velocityMap[_i4][_j4] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[_i4][_j4]));
-                        }
-                    }
-                    for (var _i5 = 1; _i5 < heightMap.length; _i5++) {
-                        heightMap[_i5 - 1][_j4] += topDelta[_i5][_j4];
-                    }
-                    for (var _i6 = 0; _i6 < heightMap.length - 1; _i6++) {
-                        heightMap[_i6 + 1][_j4] += bottomDelta[_i6][_j4];
-                    }
-                }
-                // End vertical propagation
-            }
-        }
         /** Return -1, 0, 1 */
 
     }, {
@@ -330,37 +240,10 @@ var Engine = function () {
             return Math.floor(3 * Math.random()) - 1;
         }
     }, {
-        key: "roundDecimal",
-        value: function roundDecimal(num) {
-            return Math.round(num * 10000) / 10000;
-        }
-    }, {
-        key: "initPropagationModel",
-        value: function initPropagationModel() {
-            var leftDelta = new Array(this.ROWS + 1);
-            var rightDelta = new Array(this.ROWS + 1);
-            for (var i = 0; i < this.ROWS + 1; i++) {
-                leftDelta[i] = new Array(this.COLUMNS + 1).fill(0);
-                rightDelta[i] = new Array(this.COLUMNS + 1).fill(0);
-            }
-            var topDelta = new Array(this.COLUMNS + 1);
-            var bottomDelta = new Array(this.COLUMNS + 1);
-            for (var _i7 = 0; _i7 < this.COLUMNS + 1; _i7++) {
-                topDelta[_i7] = new Array(this.ROWS + 1).fill(0);
-                bottomDelta[_i7] = new Array(this.ROWS + 1).fill(0);
-            }
-            this.propagationModelBuffers = {
-                leftDelta: leftDelta,
-                rightDelta: rightDelta,
-                topDelta: topDelta,
-                bottomDelta: bottomDelta
-            };
-        }
-    }, {
         key: "initRandomHeightmap",
         value: function initRandomHeightmap() {
             // TODO: decouple the engine's heightmap from spring model.
-            var heightMap = this.springModel.heightMap;
+            var heightMap = this.propagationSpringModel.heightMap;
             var numCols = this.COLUMNS + 1;
             var numRows = this.ROWS + 1;
             // Seed the first cell.
@@ -377,14 +260,14 @@ var Engine = function () {
                 heightMap[i][0] = _neighborHeight + this.getRandomDirection();
             }
             // Loop over inner cells, assigning height as +-1 from midpoint of top and left neighbor
-            for (var _i8 = 1; _i8 < numRows; _i8++) {
-                var row = heightMap[_i8];
-                var rowAbove = heightMap[_i8 - 1];
-                for (var _j5 = 1; _j5 < numCols; _j5++) {
-                    var topNeighbor = rowAbove[_j5];
-                    var leftNeighbor = row[_j5 - 1];
+            for (var _i = 1; _i < numRows; _i++) {
+                var row = heightMap[_i];
+                var rowAbove = heightMap[_i - 1];
+                for (var _j = 1; _j < numCols; _j++) {
+                    var topNeighbor = rowAbove[_j];
+                    var leftNeighbor = row[_j - 1];
                     var midpoint = (topNeighbor + leftNeighbor) / 2;
-                    heightMap[_i8][_j5] = Math.round(midpoint) + this.getRandomDirection();
+                    heightMap[_i][_j] = Math.round(midpoint) + this.getRandomDirection();
                 }
             }
             this.applyHeightmapToGeometry();
@@ -643,6 +526,148 @@ var SpringModel = function () {
 }();
 
 exports.SpringModel = SpringModel;
+
+/***/ }),
+/* 4 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var spring_model_1 = __webpack_require__(3);
+
+var PropagationSpringModel = function (_spring_model_1$Sprin) {
+    _inherits(PropagationSpringModel, _spring_model_1$Sprin);
+
+    function PropagationSpringModel(ROWS, COLUMNS) {
+        _classCallCheck(this, PropagationSpringModel);
+
+        // Physics parameters.
+        var _this = _possibleConstructorReturn(this, (PropagationSpringModel.__proto__ || Object.getPrototypeOf(PropagationSpringModel)).call(this, ROWS, COLUMNS));
+
+        _this.S = 0.0005; // Wave spread.
+        _this.BACK_PROPAGATIONS = 4;
+        var leftDelta = new Array(_this.ROWS + 1);
+        var rightDelta = new Array(_this.ROWS + 1);
+        for (var i = 0; i < _this.ROWS + 1; i++) {
+            leftDelta[i] = new Array(_this.COLUMNS + 1).fill(0);
+            rightDelta[i] = new Array(_this.COLUMNS + 1).fill(0);
+        }
+        var topDelta = new Array(_this.COLUMNS + 1);
+        var bottomDelta = new Array(_this.COLUMNS + 1);
+        for (var _i = 0; _i < _this.COLUMNS + 1; _i++) {
+            topDelta[_i] = new Array(_this.ROWS + 1).fill(0);
+            bottomDelta[_i] = new Array(_this.ROWS + 1).fill(0);
+        }
+        _this.propagationModelBuffers = {
+            leftDelta: leftDelta,
+            rightDelta: rightDelta,
+            topDelta: topDelta,
+            bottomDelta: bottomDelta
+        };
+        return _this;
+    }
+
+    _createClass(PropagationSpringModel, [{
+        key: "iteratePropagation",
+        value: function iteratePropagation() {
+            var heightMap = this.heightMap;
+            var velocityMap = this.velocityMap;
+            var _propagationModelBuff = this.propagationModelBuffers,
+                leftDelta = _propagationModelBuff.leftDelta,
+                rightDelta = _propagationModelBuff.rightDelta,
+                topDelta = _propagationModelBuff.topDelta,
+                bottomDelta = _propagationModelBuff.bottomDelta;
+            // Clear deltas.
+
+            for (var i = 0; i < this.ROWS + 1; i++) {
+                leftDelta[i] = leftDelta[i].fill(0);
+                rightDelta[i] = rightDelta[i].fill(0);
+            }
+            for (var _i2 = 0; _i2 < this.COLUMNS + 1; _i2++) {
+                topDelta[_i2] = topDelta[_i2].fill(0);
+                bottomDelta[_i2] = bottomDelta[_i2].fill(0);
+            }
+            for (var l = 0; l < this.BACK_PROPAGATIONS; l++) {
+                // Horizontal propagation
+                for (var _i3 = 0; _i3 < heightMap.length; _i3++) {
+                    var heightRow = heightMap[_i3];
+                    var rowVelocity = velocityMap[_i3];
+                    // Left velocity propagation.
+                    for (var j = 1; j < heightRow.length; j++) {
+                        leftDelta[_i3][j] = this.roundDecimal(this.S * (heightRow[j] - heightRow[j - 1]));
+                        rowVelocity[j] += leftDelta[_i3][j];
+                        if (rowVelocity[j] < 0) {
+                            rowVelocity[j] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(rowVelocity[j]));
+                        } else if (rowVelocity[j] > 0) {
+                            rowVelocity[j] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(rowVelocity[j]));
+                        }
+                    }
+                    // Right velocity propagation.
+                    for (var _j = 0; _j < heightRow.length - 1; _j++) {
+                        rightDelta[_i3][_j] = this.roundDecimal(this.S * (heightRow[_j] - heightRow[_j + 1]));
+                        rowVelocity[_j] += rightDelta[_i3][_j];
+                        if (rowVelocity[_j] < 0) {
+                            rowVelocity[_j] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(rowVelocity[_j]));
+                        } else if (rowVelocity[_j] > 0) {
+                            rowVelocity[_j] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(rowVelocity[_j]));
+                        }
+                    }
+                    // Left height propagation
+                    for (var _j2 = 1; _j2 < heightRow.length; _j2++) {
+                        heightMap[_i3][_j2 - 1] += leftDelta[_i3][_j2];
+                    }
+                    // Right height propagation
+                    for (var _j3 = 0; _j3 < heightRow.length - 1; _j3++) {
+                        heightMap[_i3][_j3 + 1] += rightDelta[_i3][_j3];
+                    }
+                }
+                // End Horizontal propagation.
+                // Vertical propagation.
+                for (var _j4 = 0; _j4 < heightMap[0].length; _j4++) {
+                    for (var _i4 = 1; _i4 < heightMap.length; _i4++) {
+                        topDelta[_i4][_j4] = this.roundDecimal(this.S * (heightMap[_i4][_j4] - heightMap[_i4 - 1][_j4]));
+                        velocityMap[_i4][_j4] += topDelta[_i4][_j4];
+                        if (velocityMap[_i4][_j4] < 0) {
+                            velocityMap[_i4][_j4] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[_i4][_j4]));
+                        } else if (velocityMap[_i4][_j4] > 0) {
+                            velocityMap[_i4][_j4] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[_i4][_j4]));
+                        }
+                    }
+                    for (var _i5 = 0; _i5 < heightMap.length - 1; _i5++) {
+                        bottomDelta[_i5][_j4] = this.S * (heightMap[_i5][_j4] - heightMap[_i5 + 1][_j4]);
+                        velocityMap[_i5][_j4] += bottomDelta[_i5][_j4];
+                        if (velocityMap[_i5][_j4] < 0) {
+                            velocityMap[_i5][_j4] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[_i5][_j4]));
+                        } else if (velocityMap[_i5][_j4] > 0) {
+                            velocityMap[_i5][_j4] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[_i5][_j4]));
+                        }
+                    }
+                    for (var _i6 = 1; _i6 < heightMap.length; _i6++) {
+                        heightMap[_i6 - 1][_j4] += topDelta[_i6][_j4];
+                    }
+                    for (var _i7 = 0; _i7 < heightMap.length - 1; _i7++) {
+                        heightMap[_i7 + 1][_j4] += bottomDelta[_i7][_j4];
+                    }
+                }
+                // End vertical propagation
+            }
+        }
+    }]);
+
+    return PropagationSpringModel;
+}(spring_model_1.SpringModel);
+
+exports.PropagationSpringModel = PropagationSpringModel;
 
 /***/ })
 /******/ ]);

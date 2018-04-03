@@ -9,11 +9,11 @@ export class SpringModel {
   public velocityMap: number[][]
 
   // Physics parameters.
-  private readonly K = 0.03 // "Hooke's constant"
-  private readonly D = 0.025 // Dampening Factor
-  private readonly TERMINAL_VELOCITY = 1.5
+  protected readonly K = 0.03 // "Hooke's constant"
+  protected readonly D = 0.025 // Dampening Factor
+  protected readonly TERMINAL_VELOCITY = 1.5
 
-  constructor(private readonly ROWS, private readonly COLUMNS) {
+  constructor(protected readonly ROWS, protected readonly COLUMNS) {
     let numRows = this.ROWS + 1
     const numCols = this.COLUMNS + 1
     const heightMap = new Array(numRows);
@@ -52,7 +52,7 @@ export class SpringModel {
   }
 
   // TODO: refactor into utility
-  private roundDecimal(num) {
+  protected roundDecimal(num) {
     return Math.round(num * 10000) / 10000
   }
 }

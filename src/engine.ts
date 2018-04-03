@@ -8,6 +8,12 @@ interface Point {
   z?: number,
 }
 
+const EVENT_KEYS = {
+  ITERATE: 'x',
+  RUN: 'y',
+  RANDOM: 'z',
+};
+
 export class Engine {
   private width = window.innerWidth
   private height = window.innerHeight
@@ -21,11 +27,6 @@ export class Engine {
 
   private propagationSpringModel: PropagationSpringModel
   private rippleModel: RippleModel
-
-  // Key press to trigger a simulation cycle.
-  private readonly ITERATION_TRIGGER_KEY = 'x';
-  private readonly AUTOMATIC_TRIGGER_KEY = 'y';
-  private readonly RANDOM_WALK_TRIGGER_KEY = 'z';
 
   private scene: THREE.Scene
   private camera: THREE.Camera
@@ -227,43 +228,43 @@ export class Engine {
   }
 
   private addEventListeners() {
-    window.addEventListener('mouseup', (e) => { this.handleClick(e) } , false );
+    window.addEventListener('mouseup', (e) => { this.handleMouseup(e) } , false );
     window.addEventListener('keyup', (e) => { this.handleKeyUp(e) } , false );
   }
 
-  private handleKeyUp( event ) {
-    const { key } = event;
-    if(key.toLowerCase() == this.ITERATION_TRIGGER_KEY) {
-      this.iterate()
-    }
-    if(key.toLowerCase() == this.AUTOMATIC_TRIGGER_KEY) {
-      setInterval(() => { this.iterate() }, 100)
-    }
-    if(key.toLowerCase() == this.RANDOM_WALK_TRIGGER_KEY) {
-      this.initRandomHeightmap()
+  private handleKeyUp({ key }) {
+    key = key.toLowerCase()
+    switch(key) {
+      case EVENT_KEYS.ITERATE: {
+        this.iterate()
+        break
+      }
+      case EVENT_KEYS.RUN: {
+        setInterval(() => { this.iterate() }, 100)
+        break
+      }
+      case EVENT_KEYS.ITERATE: {
+        this.initRandomHeightmap()
+        break
+      }
+      default: {}
     }
   }
 
-  private handleClick( event ) {
-    // calculate mouse position in normalized device coordinates
-    // (-1 to +1) for both components
-    const x = ( event.clientX / window.innerWidth ) * 2 - 1;
-    const y = - ( event.clientY / window.innerHeight ) * 2 + 1;
-    const mouse = {x, y};
+  private handleMouseup({ clientX , clientY }) {
+    const mouse = {
+      x: 2 * ( clientX / this.width ) - 1,
+      y: -2 * ( clientY / this.height ) + 1,
+    }
     this.raycaster.setFromCamera(mouse, this.camera)
-    const intersects = this.raycaster.intersectObjects( this.scene.children )
-    const planeIntersect = intersects.find(intersect => intersect.object.uuid === this.planeUUID)
+    const planeIntersect =  this.raycaster.intersectObjects( this.scene.children )
+        .find(({ object: { uuid }}) => uuid === this.planeUUID)
     if(planeIntersect) {
-      const {
-        point: {
-          x,
-          y
-        }
-      } = planeIntersect;
+      const { point: { x, y } } = planeIntersect
 
-      // These are sequenced to match the vertices indexing.
-      const columnIndex = Math.round(x / this.CELL_WIDTH) + (this.COLUMNS / 2);
-      const rowIndex = -1 * Math.round(y / this.CELL_HEIGHT) + (this.ROWS / 2);
+      // Translate coordinates to vertices' indexing.
+      const columnIndex = Math.round( x / this.CELL_WIDTH ) + ( this.COLUMNS / 2 )
+      const rowIndex = -1 * Math.round( y / this.CELL_HEIGHT ) + ( this.ROWS / 2 )
       // this.waves.push( new Wave({x: columnIndex, y: rowIndex}) )
       this.rippleModel.applyImpression(rowIndex, columnIndex)
 
@@ -272,10 +273,8 @@ export class Engine {
   }
 
   private getVerticeIndex(rowIndex, columnIndex) {
-    const index = rowIndex * (this.COLUMNS + 1) + columnIndex;
-    const maxIndex = (this.COLUMNS + 1) * (this.ROWS + 1);
-    if(index > maxIndex)
-      return -1
-    return index;
+    const index = rowIndex * (this.COLUMNS + 1) + columnIndex
+    const maxIndex = (this.COLUMNS + 1) * (this.ROWS + 1)
+    return index > maxIndex ? -1 : index
   }
 }

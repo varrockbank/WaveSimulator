@@ -92,6 +92,11 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 Object.defineProperty(exports, "__esModule", { value: true });
 var ripple_1 = __webpack_require__(2);
 var propagation_spring_model_1 = __webpack_require__(4);
+var EVENT_KEYS = {
+    ITERATE: 'x',
+    RUN: 'y',
+    RANDOM: 'z'
+};
 
 var Engine = function () {
     function Engine() {
@@ -105,10 +110,6 @@ var Engine = function () {
         this.PLANE_HEIGHT = 100;
         this.CELL_HEIGHT = this.PLANE_HEIGHT / this.ROWS;
         this.CELL_WIDTH = this.PLANE_WIDTH / this.COLUMNS;
-        // Key press to trigger a simulation cycle.
-        this.ITERATION_TRIGGER_KEY = 'x';
-        this.AUTOMATIC_TRIGGER_KEY = 'y';
-        this.RANDOM_WALK_TRIGGER_KEY = 'z';
         this.waves = [];
         // Instance Scene.
         this.scene = new THREE.Scene();
@@ -304,7 +305,7 @@ var Engine = function () {
             var _this2 = this;
 
             window.addEventListener('mouseup', function (e) {
-                _this2.handleClick(e);
+                _this2.handleMouseup(e);
             }, false);
             window.addEventListener('keyup', function (e) {
                 _this2.handleKeyUp(e);
@@ -312,46 +313,59 @@ var Engine = function () {
         }
     }, {
         key: "handleKeyUp",
-        value: function handleKeyUp(event) {
+        value: function handleKeyUp(_ref) {
             var _this3 = this;
 
-            var key = event.key;
+            var key = _ref.key;
 
-            if (key.toLowerCase() == this.ITERATION_TRIGGER_KEY) {
-                this.iterate();
-            }
-            if (key.toLowerCase() == this.AUTOMATIC_TRIGGER_KEY) {
-                setInterval(function () {
-                    _this3.iterate();
-                }, 100);
-            }
-            if (key.toLowerCase() == this.RANDOM_WALK_TRIGGER_KEY) {
-                this.initRandomHeightmap();
+            key = key.toLowerCase();
+            switch (key) {
+                case EVENT_KEYS.ITERATE:
+                    {
+                        this.iterate();
+                        break;
+                    }
+                case EVENT_KEYS.RUN:
+                    {
+                        setInterval(function () {
+                            _this3.iterate();
+                        }, 100);
+                        break;
+                    }
+                case EVENT_KEYS.ITERATE:
+                    {
+                        this.initRandomHeightmap();
+                        break;
+                    }
+                default:
+                    {}
             }
         }
     }, {
-        key: "handleClick",
-        value: function handleClick(event) {
+        key: "handleMouseup",
+        value: function handleMouseup(_ref2) {
             var _this4 = this;
 
-            // calculate mouse position in normalized device coordinates
-            // (-1 to +1) for both components
-            var x = event.clientX / window.innerWidth * 2 - 1;
-            var y = -(event.clientY / window.innerHeight) * 2 + 1;
-            var mouse = { x: x, y: y };
+            var clientX = _ref2.clientX,
+                clientY = _ref2.clientY;
+
+            var mouse = {
+                x: 2 * (clientX / this.width) - 1,
+                y: -2 * (clientY / this.height) + 1
+            };
             this.raycaster.setFromCamera(mouse, this.camera);
-            var intersects = this.raycaster.intersectObjects(this.scene.children);
-            var planeIntersect = intersects.find(function (intersect) {
-                return intersect.object.uuid === _this4.planeUUID;
+            var planeIntersect = this.raycaster.intersectObjects(this.scene.children).find(function (_ref3) {
+                var uuid = _ref3.object.uuid;
+                return uuid === _this4.planeUUID;
             });
             if (planeIntersect) {
                 var _planeIntersect$point = planeIntersect.point,
-                    _x = _planeIntersect$point.x,
-                    _y = _planeIntersect$point.y;
-                // These are sequenced to match the vertices indexing.
+                    x = _planeIntersect$point.x,
+                    y = _planeIntersect$point.y;
+                // Translate coordinates to vertices' indexing.
 
-                var columnIndex = Math.round(_x / this.CELL_WIDTH) + this.COLUMNS / 2;
-                var rowIndex = -1 * Math.round(_y / this.CELL_HEIGHT) + this.ROWS / 2;
+                var columnIndex = Math.round(x / this.CELL_WIDTH) + this.COLUMNS / 2;
+                var rowIndex = -1 * Math.round(y / this.CELL_HEIGHT) + this.ROWS / 2;
                 // this.waves.push( new Wave({x: columnIndex, y: rowIndex}) )
                 this.rippleModel.applyImpression(rowIndex, columnIndex);
                 this.iterate();
@@ -362,8 +376,7 @@ var Engine = function () {
         value: function getVerticeIndex(rowIndex, columnIndex) {
             var index = rowIndex * (this.COLUMNS + 1) + columnIndex;
             var maxIndex = (this.COLUMNS + 1) * (this.ROWS + 1);
-            if (index > maxIndex) return -1;
-            return index;
+            return index > maxIndex ? -1 : index;
         }
     }]);
 

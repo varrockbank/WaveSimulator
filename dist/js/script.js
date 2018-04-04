@@ -83,6 +83,16 @@ function makeRowOrderMatrix(rows, columns) {
     }return matrix;
 }
 exports.makeRowOrderMatrix = makeRowOrderMatrix;
+/**
+ * @param m number of columns
+ * @param i row number
+ * @param j column number
+ * @return index into ( m x n ) matrix represented with a 1-d buffer
+ */
+function getSingleBufferRowMajorMatrixIndex(m, i, j) {
+    return i * m + j;
+}
+exports.getSingleBufferRowMajorMatrixIndex = getSingleBufferRowMajorMatrixIndex;
 
 /***/ }),
 /* 1 */
@@ -135,6 +145,8 @@ var Engine = function () {
         this.CELL_HEIGHT = this.PLANE_HEIGHT / this.ROWS;
         this.CELL_WIDTH = this.PLANE_WIDTH / this.COLUMNS;
         this.waves = [];
+        console.assert(this.ROWS > 0);
+        console.assert(this.COLUMNS > 0);
         // Instance Scene.
         this.scene = new THREE.Scene();
         // Instantiate Camera.
@@ -434,8 +446,8 @@ var RippleModel = function () {
 
         this.ROWS = ROWS;
         this.COLUMNS = COLUMNS;
-        this.rippleHeightMap = utilities_1.makeRowOrderMatrix(ROWS, COLUMNS);
-        this.rippleHeightMap_prev = utilities_1.makeRowOrderMatrix(ROWS, COLUMNS);
+        this.rippleHeightMap = new Array(ROWS * COLUMNS).fill(0);
+        this.rippleHeightMap_prev = new Array(ROWS * COLUMNS).fill(0);
     }
 
     _createClass(RippleModel, [{
@@ -443,32 +455,41 @@ var RippleModel = function () {
         value: function iterate() {
             for (var i = 0; i < this.ROWS; i++) {
                 for (var j = 0; j < this.COLUMNS; j++) {
-                    var elements = [this.rippleHeightMap_prev[Math.min(i + 1, this.ROWS - 1)][j], this.rippleHeightMap_prev[Math.max(i - 1, 0)][j], this.rippleHeightMap_prev[i][Math.max(j - 1, 0)], this.rippleHeightMap_prev[i][Math.min(j + 1, this.COLUMNS - 1)], this.rippleHeightMap_prev[Math.min(i + 1, this.ROWS - 1)][Math.max(j - 1, 0)], this.rippleHeightMap_prev[Math.min(i + 1, this.ROWS - 1)][Math.min(j + 1, this.COLUMNS - 1)], this.rippleHeightMap_prev[Math.max(i - 1, 0)][Math.max(j - 1, 0)], this.rippleHeightMap_prev[Math.max(i - 1, 0)][Math.min(j + 1, this.COLUMNS - 1)]];
+                    var index = utilities_1.getSingleBufferRowMajorMatrixIndex(this.COLUMNS, i, j);
+                    var elements = [this.rippleHeightMap_prev[utilities_1.getSingleBufferRowMajorMatrixIndex(this.COLUMNS, Math.min(i + 1, this.ROWS - 1), j)], this.rippleHeightMap_prev[utilities_1.getSingleBufferRowMajorMatrixIndex(this.COLUMNS, Math.max(i - 1, 0), j)], this.rippleHeightMap_prev[utilities_1.getSingleBufferRowMajorMatrixIndex(this.COLUMNS, i, Math.max(j - 1, 0))], this.rippleHeightMap_prev[utilities_1.getSingleBufferRowMajorMatrixIndex(this.COLUMNS, i, Math.min(j + 1, this.COLUMNS - 1))], this.rippleHeightMap_prev[utilities_1.getSingleBufferRowMajorMatrixIndex(this.COLUMNS, Math.min(i + 1, this.ROWS - 1), Math.max(j - 1, 0))], this.rippleHeightMap_prev[utilities_1.getSingleBufferRowMajorMatrixIndex(this.COLUMNS, Math.min(i + 1, this.ROWS - 1), Math.min(j + 1, this.COLUMNS - 1))], this.rippleHeightMap_prev[utilities_1.getSingleBufferRowMajorMatrixIndex(this.COLUMNS, Math.max(i - 1, 0), Math.max(j - 1, 0))], this.rippleHeightMap_prev[utilities_1.getSingleBufferRowMajorMatrixIndex(this.COLUMNS, Math.max(i - 1, 0), Math.min(j + 1, this.COLUMNS - 1))]];
                     // TODO: Don't give each each neighbor equal weight
-                    this.rippleHeightMap[i][j] += elements.reduce(function (total, num) {
+                    this.rippleHeightMap[index] += elements.reduce(function (total, num) {
                         return total + num;
-                    }) / 8 - this.rippleHeightMap_prev[i][j];
-                    this.rippleHeightMap[i][j] *= .95;
+                    }) / 8 - this.rippleHeightMap_prev[index];
+                    this.rippleHeightMap[index] *= .95;
                 }
             }
             for (var _i = 0; _i < this.ROWS; _i++) {
                 for (var _j = 0; _j < this.COLUMNS; _j++) {
-                    this.rippleHeightMap_prev[_i][_j] += this.rippleHeightMap[_i][_j];
+                    var _index = utilities_1.getSingleBufferRowMajorMatrixIndex(this.COLUMNS, _i, _j);
+                    this.rippleHeightMap_prev[_index] += this.rippleHeightMap[_index];
                 }
             }
         }
     }, {
         key: "getHeightMap",
         value: function getHeightMap() {
-            return this.rippleHeightMap;
+            var heightMap = utilities_1.makeRowOrderMatrix(this.ROWS, this.COLUMNS);
+            for (var i = 0; i < this.ROWS; i++) {
+                for (var j = 0; j < this.COLUMNS; j++) {
+                    heightMap[i][j] = this.rippleHeightMap[utilities_1.getSingleBufferRowMajorMatrixIndex(this.COLUMNS, i, j)];
+                }
+            }
+            return heightMap;
         }
     }, {
         key: "applyImpression",
         value: function applyImpression(rowIndex, columnIndex) {
-            if (this.rippleHeightMap_prev[rowIndex][columnIndex] < 0) {
-                this.rippleHeightMap_prev[rowIndex][columnIndex] -= 10;
+            var index = utilities_1.getSingleBufferRowMajorMatrixIndex(this.COLUMNS, rowIndex, columnIndex);
+            if (this.rippleHeightMap_prev[index] < 0) {
+                this.rippleHeightMap_prev[index] -= 10;
             } else {
-                this.rippleHeightMap_prev[rowIndex][columnIndex] += 10;
+                this.rippleHeightMap_prev[index] += 10;
             }
         }
     }]);

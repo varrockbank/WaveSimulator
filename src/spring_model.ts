@@ -7,7 +7,7 @@ import { makeRowOrderMatrix, getSingleBufferRowMajorMatrixIndexer } from "./util
  */
 export class SpringModel {
   public heightMap: number[]
-  public velocityMap: number[][]
+  public velocityMap: number[]
 
   // Physics parameters.
   protected readonly K = 0.03 // Hooke's constant
@@ -18,7 +18,7 @@ export class SpringModel {
 
   constructor(protected readonly ROWS, protected readonly COLUMNS) {
     this.heightMap = (new Array(ROWS * COLUMNS)).fill(0)
-    this.velocityMap = makeRowOrderMatrix(ROWS, COLUMNS)
+    this.velocityMap =  (new Array(ROWS * COLUMNS)).fill(0)
     this.indexer = getSingleBufferRowMajorMatrixIndexer(COLUMNS)
   }
 
@@ -29,19 +29,18 @@ export class SpringModel {
 
     let rowNum = this.ROWS
     while(rowNum--) {
-      const velocityRow = velocityMap[rowNum]
       let colNum = this.COLUMNS
       while(colNum--) {
         const index = indexer(rowNum, colNum)
-        const velocity = velocityRow[colNum]
+        const velocity = velocityMap[index]
         heightMap[index] += velocity
 
         const targetHeight = 0
         const height = heightMap[index]
         const x = height - targetHeight
         const acceleration = (-1 * this.K * x) - ( this.D * velocity)
-        velocityRow[colNum] += this.roundDecimal(acceleration)
-        velocityRow[colNum] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityRow[colNum]))
+        velocityMap[index] += this.roundDecimal(acceleration)
+        velocityMap[index] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[index]))
       }
     }
   }

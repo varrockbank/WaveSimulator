@@ -100,7 +100,9 @@ exports.getRandomDirection = getRandomDirection;
 Object.defineProperty(exports, "__esModule", { value: true });
 var engine_1 = __webpack_require__(2);
 var init = function init() {
-    var engine = new engine_1.Engine();
+    var numRows = 50;
+    var numColumns = 50;
+    var engine = new engine_1.Engine(numRows, numColumns);
 };
 window.onload = init;
 
@@ -125,13 +127,13 @@ var EVENT_KEYS = {
 };
 
 var Engine = function () {
-    function Engine() {
+    function Engine(ROWS, COLUMNS) {
         _classCallCheck(this, Engine);
 
+        this.ROWS = ROWS;
+        this.COLUMNS = COLUMNS;
         this.width = window.innerWidth;
         this.height = window.innerHeight;
-        this.ROWS = 50;
-        this.COLUMNS = 50;
         this.ROW_VERTICES = this.ROWS + 1;
         this.COLUMN_VERTICES = this.COLUMNS + 1;
         this.NUM_VERTICES = this.ROW_VERTICES * this.COLUMN_VERTICES;

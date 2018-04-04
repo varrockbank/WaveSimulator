@@ -11,8 +11,6 @@ export class Engine {
   private width = window.innerWidth
   private height = window.innerHeight
 
-  private readonly ROWS = 50
-  private readonly COLUMNS = 50
   private readonly ROW_VERTICES = this.ROWS + 1
   private readonly COLUMN_VERTICES = this.COLUMNS + 1
   private readonly NUM_VERTICES = this.ROW_VERTICES * this.COLUMN_VERTICES
@@ -36,7 +34,10 @@ export class Engine {
   private planeUUID: string
   private geometry: THREE.Geometry
 
-  constructor () {
+  constructor (
+    private readonly ROWS,
+    private readonly COLUMNS,
+  ) {
     console.assert(this.ROWS > 0)
     console.assert(this.COLUMNS > 0)
 

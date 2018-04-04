@@ -3,8 +3,9 @@
 import { Engine } from './engine'
 
 const init = (): void => {
-  const engine: Engine = new Engine()
-
+  const numRows = 50
+  const numColumns = 50
+  const engine: Engine = new Engine(numRows, numColumns)
 }
 
 window.onload = init

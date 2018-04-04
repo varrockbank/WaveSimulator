@@ -1,4 +1,4 @@
-## Commentary
+# Commentary
 This project is intended to demonstrate my abilities spanning:
 
 - ES6 JavaScript
@@ -18,7 +18,12 @@ This project is intended to demonstrate my abilities spanning:
   - Use 1-d buffer to represent 2-d matrix
   - Special-case looping styles
   - Avoiding premature optimizations, programming against higher abstractions first
-  
+
+# Preview
+![preview](https://raw.githubusercontent.com/varrockbank/WaveSimulator/master/preview.gif)
+
+[Demo](https://varrockbank.github.io/WaveSimulator/dist/index.html)
+
 # Stack
 - three.js 88dev
   - OrbitControls

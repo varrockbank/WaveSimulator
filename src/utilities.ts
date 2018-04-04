@@ -12,11 +12,8 @@ export function makeRowOrderMatrix(rows: number, columns): number[][] {
 
 /**
  * @param m number of columns
- * @param i row number
- * @param j column number
- * @return index into ( m x n ) matrix represented with a 1-d buffer
+ * @return function for indexing into 1-d buffer representing ( m x n ) matrix
  */
-export function getSingleBufferRowMajorMatrixIndex(m, i, j) {
-  return i * m + j
+export function getSingleBufferRowMajorMatrixIndexer(m) {
+  return (i, j) => i * m + j
 }
-

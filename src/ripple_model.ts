@@ -1,4 +1,4 @@
-import { makeRowOrderMatrix,  getSingleBufferRowMajorMatrixIndex as flatIndex} from "./utilities"
+import { makeRowOrderMatrix, getSingleBufferRowMajorMatrixIndexer} from "./utilities"
 
 /**
  * A heightfield based ripple model which updates points with average of neighbors from previous
@@ -15,27 +15,32 @@ export class RippleModel {
   // Dampening value between 0 and 1 inclusive.
   private readonly D = .95
 
+  private indexer: (i, j) => number
+
   constructor(private readonly M, private readonly N) {
     this.heightField = (new Array(M * N)).fill(0)
     this.heightField_prev = (new Array(M * N)).fill(0)
+    this.indexer = getSingleBufferRowMajorMatrixIndexer(N)
   }
 
   iterate() {
     {
+      const indexer = this.indexer
+      const N = this.N
       let i = this.M
       while(i--) {
-        let j = this.N
+        let j = N
         while(j--) {
-          const index = flatIndex(this.N, i, j)
+          const index = indexer(i, j)
           const elements = [
-            this.heightField_prev[flatIndex(this.N, Math.min(i+1, this.M-1), j)],
-            this.heightField_prev[flatIndex(this.N, Math.max(i-1, 0), j)],
-            this.heightField_prev[flatIndex(this.N, i, Math.max(j-1, 0))],
-            this.heightField_prev[flatIndex(this.N, i, Math.min(j+1, this.N-1))],
-            this.heightField_prev[flatIndex(this.N, Math.min(i+1, this.M-1), Math.max(j-1, 0))],
-            this.heightField_prev[flatIndex(this.N, Math.min(i+1, this.M-1), Math.min(j+1, this.N-1))],
-            this.heightField_prev[flatIndex(this.N, Math.max(i-1, 0), Math.max(j-1, 0))],
-            this.heightField_prev[flatIndex(this.N, Math.max(i-1, 0), Math.min(j+1, this.N-1))],
+            this.heightField_prev[indexer(Math.min(i+1, this.M-1), j)],
+            this.heightField_prev[indexer(Math.max(i-1, 0), j)],
+            this.heightField_prev[indexer(i, Math.max(j-1, 0))],
+            this.heightField_prev[indexer(i, Math.min(j+1, this.N-1))],
+            this.heightField_prev[indexer(Math.min(i+1, this.M-1), Math.max(j-1, 0))],
+            this.heightField_prev[indexer(Math.min(i+1, this.M-1), Math.min(j+1, this.N-1))],
+            this.heightField_prev[indexer(Math.max(i-1, 0), Math.max(j-1, 0))],
+            this.heightField_prev[indexer(Math.max(i-1, 0), Math.min(j+1, this.N-1))],
           ]
           // TODO: Don't give each each neighbor equal weight
           this.heightField[index] += (elements.reduce((total, num) => total + num) / 8) - this.heightField_prev[index]
@@ -50,17 +55,18 @@ export class RippleModel {
   }
 
   public getHeightMap() {
-    const heightMap = makeRowOrderMatrix(this.M, this.N)
+    const heightMap = makeRowOrderMatrix(this.M, this.N),
+        indexer = this.indexer
     let i = this.M
     while(i--) {
       let j = this.N
-      while(j--) heightMap[i][j] = this.heightField[flatIndex(this.N, i, j)]
+      while(j--) heightMap[i][j] = this.heightField[indexer(i, j)]
     }
     return heightMap
   }
 
   public applyImpression(rowIndex, columnIndex) {
-    const index = flatIndex(this.N, rowIndex, columnIndex)
+    const index = this.indexer(rowIndex, columnIndex)
     if(this.heightField_prev[index] < 0) {
       this.heightField_prev[index] -= 10
     } else {

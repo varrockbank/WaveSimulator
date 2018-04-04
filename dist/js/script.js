@@ -89,10 +89,12 @@ exports.makeRowOrderMatrix = makeRowOrderMatrix;
  * @param j column number
  * @return index into ( m x n ) matrix represented with a 1-d buffer
  */
-function getSingleBufferRowMajorMatrixIndex(m, i, j) {
-    return i * m + j;
+function getSingleBufferRowMajorMatrixIndexer(m) {
+    return function (i, j) {
+        return i * m + j;
+    };
 }
-exports.getSingleBufferRowMajorMatrixIndex = getSingleBufferRowMajorMatrixIndex;
+exports.getSingleBufferRowMajorMatrixIndexer = getSingleBufferRowMajorMatrixIndexer;
 
 /***/ }),
 /* 1 */
@@ -451,18 +453,21 @@ var RippleModel = function () {
         this.D = .95;
         this.heightField = new Array(M * N).fill(0);
         this.heightField_prev = new Array(M * N).fill(0);
+        this.indexer = utilities_1.getSingleBufferRowMajorMatrixIndexer(N);
     }
 
     _createClass(RippleModel, [{
         key: "iterate",
         value: function iterate() {
             {
+                var indexer = this.indexer;
+                var N = this.N;
                 var i = this.M;
                 while (i--) {
-                    var j = this.N;
+                    var j = N;
                     while (j--) {
-                        var index = utilities_1.getSingleBufferRowMajorMatrixIndex(this.N, i, j);
-                        var elements = [this.heightField_prev[utilities_1.getSingleBufferRowMajorMatrixIndex(this.N, Math.min(i + 1, this.M - 1), j)], this.heightField_prev[utilities_1.getSingleBufferRowMajorMatrixIndex(this.N, Math.max(i - 1, 0), j)], this.heightField_prev[utilities_1.getSingleBufferRowMajorMatrixIndex(this.N, i, Math.max(j - 1, 0))], this.heightField_prev[utilities_1.getSingleBufferRowMajorMatrixIndex(this.N, i, Math.min(j + 1, this.N - 1))], this.heightField_prev[utilities_1.getSingleBufferRowMajorMatrixIndex(this.N, Math.min(i + 1, this.M - 1), Math.max(j - 1, 0))], this.heightField_prev[utilities_1.getSingleBufferRowMajorMatrixIndex(this.N, Math.min(i + 1, this.M - 1), Math.min(j + 1, this.N - 1))], this.heightField_prev[utilities_1.getSingleBufferRowMajorMatrixIndex(this.N, Math.max(i - 1, 0), Math.max(j - 1, 0))], this.heightField_prev[utilities_1.getSingleBufferRowMajorMatrixIndex(this.N, Math.max(i - 1, 0), Math.min(j + 1, this.N - 1))]];
+                        var index = indexer(i, j);
+                        var elements = [this.heightField_prev[indexer(Math.min(i + 1, this.M - 1), j)], this.heightField_prev[indexer(Math.max(i - 1, 0), j)], this.heightField_prev[indexer(i, Math.max(j - 1, 0))], this.heightField_prev[indexer(i, Math.min(j + 1, this.N - 1))], this.heightField_prev[indexer(Math.min(i + 1, this.M - 1), Math.max(j - 1, 0))], this.heightField_prev[indexer(Math.min(i + 1, this.M - 1), Math.min(j + 1, this.N - 1))], this.heightField_prev[indexer(Math.max(i - 1, 0), Math.max(j - 1, 0))], this.heightField_prev[indexer(Math.max(i - 1, 0), Math.min(j + 1, this.N - 1))]];
                         // TODO: Don't give each each neighbor equal weight
                         this.heightField[index] += elements.reduce(function (total, num) {
                             return total + num;
@@ -481,12 +486,13 @@ var RippleModel = function () {
     }, {
         key: "getHeightMap",
         value: function getHeightMap() {
-            var heightMap = utilities_1.makeRowOrderMatrix(this.M, this.N);
+            var heightMap = utilities_1.makeRowOrderMatrix(this.M, this.N),
+                indexer = this.indexer;
             var i = this.M;
             while (i--) {
                 var j = this.N;
                 while (j--) {
-                    heightMap[i][j] = this.heightField[utilities_1.getSingleBufferRowMajorMatrixIndex(this.N, i, j)];
+                    heightMap[i][j] = this.heightField[indexer(i, j)];
                 }
             }
             return heightMap;
@@ -494,7 +500,7 @@ var RippleModel = function () {
     }, {
         key: "applyImpression",
         value: function applyImpression(rowIndex, columnIndex) {
-            var index = utilities_1.getSingleBufferRowMajorMatrixIndex(this.N, rowIndex, columnIndex);
+            var index = this.indexer(rowIndex, columnIndex);
             if (this.heightField_prev[index] < 0) {
                 this.heightField_prev[index] -= 10;
             } else {

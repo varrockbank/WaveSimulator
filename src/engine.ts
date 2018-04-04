@@ -126,22 +126,20 @@ export class Engine {
     while(i--)
       this.heightMap[i] += rippleHeightBuffer[i]
 
-    this.applyHeightmapToGeometry()
-
     this.digestGeometry()
   }
 
-  private applyHeightmapToGeometry() {
+  private digestGeometry() {
     const heightMap = this.heightMap
     let i = heightMap.length
     while(i--)
       this.geometry.vertices[i].z = this.heightMap[i]
+    this.geometry.verticesNeedUpdate = true;
   }
 
   private initRandomHeightmap() {
     this.propagationSpringModel.initRandomHeight()
     this.heightMap = this.propagationSpringModel.getHeightBuffer()
-    this.applyHeightmapToGeometry()
     this.digestGeometry()
   }
 
@@ -149,10 +147,6 @@ export class Engine {
     requestAnimationFrame(() => { this.animate() })
     this.controls.update()
     this.renderer.render(this.scene, this.camera)
-  }
-
-  private digestGeometry() {
-    this.geometry.verticesNeedUpdate = true;
   }
 
   private addEventListeners() {

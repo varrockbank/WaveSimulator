@@ -216,24 +216,22 @@ var Engine = function () {
             var i = this.heightMap.length;
             while (i--) {
                 this.heightMap[i] += rippleHeightBuffer[i];
-            }this.applyHeightmapToGeometry();
-            this.digestGeometry();
+            }this.digestGeometry();
         }
     }, {
-        key: "applyHeightmapToGeometry",
-        value: function applyHeightmapToGeometry() {
+        key: "digestGeometry",
+        value: function digestGeometry() {
             var heightMap = this.heightMap;
             var i = heightMap.length;
             while (i--) {
                 this.geometry.vertices[i].z = this.heightMap[i];
-            }
+            }this.geometry.verticesNeedUpdate = true;
         }
     }, {
         key: "initRandomHeightmap",
         value: function initRandomHeightmap() {
             this.propagationSpringModel.initRandomHeight();
             this.heightMap = this.propagationSpringModel.getHeightBuffer();
-            this.applyHeightmapToGeometry();
             this.digestGeometry();
         }
     }, {
@@ -246,11 +244,6 @@ var Engine = function () {
             });
             this.controls.update();
             this.renderer.render(this.scene, this.camera);
-        }
-    }, {
-        key: "digestGeometry",
-        value: function digestGeometry() {
-            this.geometry.verticesNeedUpdate = true;
         }
     }, {
         key: "addEventListeners",

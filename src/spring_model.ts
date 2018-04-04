@@ -15,8 +15,8 @@ export class SpringModel {
   protected readonly TERMINAL_VELOCITY = 1.5
 
   constructor(protected readonly ROWS, protected readonly COLUMNS) {
-    this.heightMap = makeRowOrderMatrix(ROWS + 1, COLUMNS + 1)
-    this.velocityMap = makeRowOrderMatrix(ROWS + 1, COLUMNS + 1)
+    this.heightMap = makeRowOrderMatrix(ROWS, COLUMNS)
+    this.velocityMap = makeRowOrderMatrix(ROWS, COLUMNS)
   }
 
   iterate() {

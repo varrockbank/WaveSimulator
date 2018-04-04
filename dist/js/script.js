@@ -127,6 +127,9 @@ var Engine = function () {
         this.height = window.innerHeight;
         this.ROWS = 50;
         this.COLUMNS = 50;
+        this.ROW_VERTICES = this.ROWS + 1;
+        this.COLUMN_VERTICES = this.COLUMNS + 1;
+        this.NUM_VERTICES = this.ROW_VERTICES * this.COLUMN_VERTICES;
         this.PLANE_WIDTH = 100;
         this.PLANE_HEIGHT = 100;
         this.CELL_HEIGHT = this.PLANE_HEIGHT / this.ROWS;
@@ -162,7 +165,7 @@ var Engine = function () {
         this.scene.add(axes);
         this.animate();
         this.addEventListeners();
-        this.propagationSpringModel = new propagation_spring_model_1.PropagationSpringModel(this.ROWS, this.COLUMNS);
+        this.propagationSpringModel = new propagation_spring_model_1.PropagationSpringModel(this.ROWS + 1, this.COLUMNS + 1);
         this.initRandomHeightmap();
         this.rippleModel = new ripple_model_1.RippleModel(this.ROWS + 1, this.COLUMNS + 1);
         this.renderer.gammaInput = true;
@@ -200,8 +203,8 @@ var Engine = function () {
             // TODO: run this at half time step
             this.rippleModel.iterate();
             var rippleHeightMap = this.rippleModel.getHeightMap();
-            for (var i = 0; i < this.ROWS; i++) {
-                for (var j = 0; j < this.COLUMNS; j++) {
+            for (var i = 0; i < this.ROW_VERTICES; i++) {
+                for (var j = 0; j < this.COLUMN_VERTICES; j++) {
                     // TODO: maybe don't merge. keep a separate springModel heightmap and a ripplemodel heightmap
                     // and render the matrix addition
                     this.propagationSpringModel.heightMap[i][j] += rippleHeightMap[i][j];
@@ -266,8 +269,8 @@ var Engine = function () {
         value: function initRandomHeightmap() {
             // TODO: decouple the engine's heightmap from spring model.
             var heightMap = this.propagationSpringModel.heightMap;
-            var numCols = this.COLUMNS + 1;
-            var numRows = this.ROWS + 1;
+            var numCols = this.COLUMN_VERTICES;
+            var numRows = this.ROW_VERTICES;
             // Seed the first cell.
             heightMap[0][0] = Math.floor(5 * Math.random()) * this.getRandomDirection();
             // Random walk along first row.
@@ -395,9 +398,8 @@ var Engine = function () {
     }, {
         key: "getVerticeIndex",
         value: function getVerticeIndex(rowIndex, columnIndex) {
-            var index = rowIndex * (this.COLUMNS + 1) + columnIndex;
-            var maxIndex = (this.COLUMNS + 1) * (this.ROWS + 1);
-            return index > maxIndex ? -1 : index;
+            var index = rowIndex * this.COLUMN_VERTICES + columnIndex;
+            return index > this.NUM_VERTICES ? -1 : index;
         }
     }]);
 
@@ -511,10 +513,10 @@ var PropagationSpringModel = function (_spring_model_1$Sprin) {
         _this.S = 0.0005; // Wave spread.
         _this.BACK_PROPAGATIONS = 4;
         _this.propagationModelBuffers = {
-            leftDelta: utilities_1.makeRowOrderMatrix(ROWS + 1, COLUMNS + 1),
-            rightDelta: utilities_1.makeRowOrderMatrix(ROWS + 1, COLUMNS + 1),
-            topDelta: utilities_1.makeRowOrderMatrix(ROWS + 1, COLUMNS + 1),
-            bottomDelta: utilities_1.makeRowOrderMatrix(ROWS + 1, COLUMNS + 1)
+            leftDelta: utilities_1.makeRowOrderMatrix(ROWS, COLUMNS),
+            rightDelta: utilities_1.makeRowOrderMatrix(ROWS, COLUMNS),
+            topDelta: utilities_1.makeRowOrderMatrix(ROWS, COLUMNS),
+            bottomDelta: utilities_1.makeRowOrderMatrix(ROWS, COLUMNS)
         };
         return _this;
     }
@@ -531,11 +533,11 @@ var PropagationSpringModel = function (_spring_model_1$Sprin) {
                 bottomDelta = _propagationModelBuff.bottomDelta;
             // Clear deltas.
 
-            for (var i = 0; i < this.ROWS + 1; i++) {
+            for (var i = 0; i < this.ROWS; i++) {
                 leftDelta[i] = leftDelta[i].fill(0);
                 rightDelta[i] = rightDelta[i].fill(0);
             }
-            for (var _i = 0; _i < this.COLUMNS + 1; _i++) {
+            for (var _i = 0; _i < this.COLUMNS; _i++) {
                 topDelta[_i] = topDelta[_i].fill(0);
                 bottomDelta[_i] = bottomDelta[_i].fill(0);
             }
@@ -640,8 +642,8 @@ var SpringModel = function () {
         this.K = 0.03; // Hooke's constant
         this.D = 0.025; // Dampening Factor
         this.TERMINAL_VELOCITY = 1.5;
-        this.heightMap = utilities_1.makeRowOrderMatrix(ROWS + 1, COLUMNS + 1);
-        this.velocityMap = utilities_1.makeRowOrderMatrix(ROWS + 1, COLUMNS + 1);
+        this.heightMap = utilities_1.makeRowOrderMatrix(ROWS, COLUMNS);
+        this.velocityMap = utilities_1.makeRowOrderMatrix(ROWS, COLUMNS);
     }
 
     _createClass(SpringModel, [{

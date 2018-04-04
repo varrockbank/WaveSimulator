@@ -21,10 +21,10 @@ export class PropagationSpringModel extends SpringModel {
   constructor(ROWS: number, COLUMNS: number) {
     super(ROWS, COLUMNS)
     this.propagationModelBuffers = {
-      leftDelta: makeRowOrderMatrix(ROWS + 1, COLUMNS + 1),
-      rightDelta: makeRowOrderMatrix(ROWS + 1, COLUMNS + 1),
-      topDelta: makeRowOrderMatrix(ROWS + 1, COLUMNS + 1),
-      bottomDelta: makeRowOrderMatrix(ROWS + 1, COLUMNS + 1),
+      leftDelta: makeRowOrderMatrix(ROWS, COLUMNS),
+      rightDelta: makeRowOrderMatrix(ROWS, COLUMNS),
+      topDelta: makeRowOrderMatrix(ROWS, COLUMNS),
+      bottomDelta: makeRowOrderMatrix(ROWS, COLUMNS),
     }
   }
 
@@ -39,11 +39,11 @@ export class PropagationSpringModel extends SpringModel {
       bottomDelta,
     } = this.propagationModelBuffers
     // Clear deltas.
-    for(let i = 0 ; i < this.ROWS + 1; i++) {
+    for(let i = 0 ; i < this.ROWS; i++) {
       leftDelta[i] = leftDelta[i].fill(0)
       rightDelta[i] = rightDelta[i].fill(0)
     }
-    for(let i = 0 ; i < this.COLUMNS + 1; i++) {
+    for(let i = 0 ; i < this.COLUMNS; i++) {
       topDelta[i] = topDelta[i].fill(0)
       bottomDelta[i] = bottomDelta[i].fill(0)
     }

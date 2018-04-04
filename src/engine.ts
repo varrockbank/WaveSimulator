@@ -14,6 +14,9 @@ export class Engine {
 
   private readonly ROWS = 50
   private readonly COLUMNS = 50
+  private readonly ROW_VERTICES = this.ROWS + 1
+  private readonly COLUMN_VERTICES = this.COLUMNS + 1
+  private readonly NUM_VERTICES = this.ROW_VERTICES * this.COLUMN_VERTICES
   private readonly PLANE_WIDTH = 100
   private readonly PLANE_HEIGHT = 100
   private readonly CELL_HEIGHT = this.PLANE_HEIGHT / this.ROWS
@@ -72,7 +75,7 @@ export class Engine {
 
     this.addEventListeners()
 
-    this.propagationSpringModel = new PropagationSpringModel(this.ROWS, this.COLUMNS)
+    this.propagationSpringModel = new PropagationSpringModel(this.ROWS + 1 , this.COLUMNS + 1)
     this.initRandomHeightmap()
     this.rippleModel = new RippleModel(this.ROWS + 1, this.COLUMNS + 1)
 
@@ -114,8 +117,8 @@ export class Engine {
     // TODO: run this at half time step
     this.rippleModel.iterate()
     const rippleHeightMap = this.rippleModel.getHeightMap();
-    for(let i = 0; i < this.ROWS ; i++) {
-      for(let j = 0 ; j < this.COLUMNS ; j++) {
+    for(let i = 0; i < this.ROW_VERTICES ; i++) {
+      for(let j = 0 ; j < this.COLUMN_VERTICES ; j++) {
         // TODO: maybe don't merge. keep a separate springModel heightmap and a ripplemodel heightmap
         // and render the matrix addition
         this.propagationSpringModel.heightMap[i][j] += rippleHeightMap[i][j]
@@ -173,8 +176,8 @@ export class Engine {
   private initRandomHeightmap() {
     // TODO: decouple the engine's heightmap from spring model.
     const heightMap = this.propagationSpringModel.heightMap
-    const numCols = this.COLUMNS + 1
-    const numRows = this.ROWS + 1
+    const numCols = this.COLUMN_VERTICES
+    const numRows = this.ROW_VERTICES
     // Seed the first cell.
     heightMap[0][0] = Math.floor(5 * Math.random()) * this.getRandomDirection()
     // Random walk along first row.
@@ -267,8 +270,7 @@ export class Engine {
   }
 
   private getVerticeIndex(rowIndex, columnIndex) {
-    const index = rowIndex * (this.COLUMNS + 1) + columnIndex
-    const maxIndex = (this.COLUMNS + 1) * (this.ROWS + 1)
-    return index > maxIndex ? -1 : index
+    const index = rowIndex * this.COLUMN_VERTICES + columnIndex
+    return index > this.NUM_VERTICES ? -1 : index
   }
 }

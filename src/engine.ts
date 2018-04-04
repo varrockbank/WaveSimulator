@@ -74,7 +74,7 @@ export class Engine {
 
     this.propagationSpringModel = new PropagationSpringModel(this.ROWS, this.COLUMNS)
     this.initRandomHeightmap()
-    this.rippleModel = new RippleModel(this.ROWS, this.COLUMNS)
+    this.rippleModel = new RippleModel(this.ROWS + 1, this.COLUMNS + 1)
 
     this.renderer.gammaInput = true
     this.renderer.gammaOutput = true

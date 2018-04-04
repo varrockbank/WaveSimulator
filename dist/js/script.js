@@ -164,7 +164,7 @@ var Engine = function () {
         this.addEventListeners();
         this.propagationSpringModel = new propagation_spring_model_1.PropagationSpringModel(this.ROWS, this.COLUMNS);
         this.initRandomHeightmap();
-        this.rippleModel = new ripple_model_1.RippleModel(this.ROWS, this.COLUMNS);
+        this.rippleModel = new ripple_model_1.RippleModel(this.ROWS + 1, this.COLUMNS + 1);
         this.renderer.gammaInput = true;
         this.renderer.gammaOutput = true;
         this.renderer.shadowMap.enabled = true;
@@ -432,17 +432,16 @@ var RippleModel = function () {
 
         this.ROWS = ROWS;
         this.COLUMNS = COLUMNS;
-        this.rippleHeightMap = utilities_1.makeRowOrderMatrix(ROWS + 1, COLUMNS + 1);
-        this.rippleHeightMap_prev = utilities_1.makeRowOrderMatrix(ROWS + 1, COLUMNS + 1);
+        this.rippleHeightMap = utilities_1.makeRowOrderMatrix(ROWS, COLUMNS);
+        this.rippleHeightMap_prev = utilities_1.makeRowOrderMatrix(ROWS, COLUMNS);
     }
 
     _createClass(RippleModel, [{
         key: "iterate",
         value: function iterate() {
-            // TODO: inspect these loop indexes. seem to be off by 1.
             for (var i = 0; i < this.ROWS; i++) {
-                for (var j = 0; j <= this.COLUMNS; j++) {
-                    var elements = [this.rippleHeightMap_prev[Math.min(i + 1, this.ROWS)][j], this.rippleHeightMap_prev[Math.max(i - 1, 0)][j], this.rippleHeightMap_prev[i][Math.max(j - 1, 0)], this.rippleHeightMap_prev[i][Math.min(this.ROWS - 1, j + 1)], this.rippleHeightMap_prev[Math.min(i + 1, this.ROWS)][Math.max(j - 1, 0)], this.rippleHeightMap_prev[Math.min(i + 1, this.ROWS)][Math.min(this.ROWS - 1, j + 1)], this.rippleHeightMap_prev[Math.max(i - 1, 0)][Math.max(j - 1, 0)], this.rippleHeightMap_prev[Math.max(i - 1, 0)][Math.min(this.ROWS - 1, j + 1)]];
+                for (var j = 0; j < this.COLUMNS; j++) {
+                    var elements = [this.rippleHeightMap_prev[Math.min(i + 1, this.ROWS - 1)][j], this.rippleHeightMap_prev[Math.max(i - 1, 0)][j], this.rippleHeightMap_prev[i][Math.max(j - 1, 0)], this.rippleHeightMap_prev[i][Math.min(j + 1, this.COLUMNS - 1)], this.rippleHeightMap_prev[Math.min(i + 1, this.ROWS - 1)][Math.max(j - 1, 0)], this.rippleHeightMap_prev[Math.min(i + 1, this.ROWS - 1)][Math.min(j + 1, this.COLUMNS - 1)], this.rippleHeightMap_prev[Math.max(i - 1, 0)][Math.max(j - 1, 0)], this.rippleHeightMap_prev[Math.max(i - 1, 0)][Math.min(j + 1, this.COLUMNS - 1)]];
                     // TODO: Don't give each each neighbor equal weight
                     this.rippleHeightMap[i][j] += elements.reduce(function (total, num) {
                         return total + num;

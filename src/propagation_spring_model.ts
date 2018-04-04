@@ -5,7 +5,6 @@ import { SpringModel } from "./spring_model"
  * PropagationSpringModel has points pull on neighbors making wave oscillate laterally.
  */
 export class PropagationSpringModel extends SpringModel {
-
   private propagationModelBuffers: {
     leftDelta: number[],
     rightDelta: number[],
@@ -29,8 +28,8 @@ export class PropagationSpringModel extends SpringModel {
 
   public iteratePropagation() {
     const indexer = this.indexer
-    const heightMap = this.heightMap
-    const velocityMap = this.velocityMap 
+    const heightField = this.heightField
+    const velocityField = this.velocityField
 
     let {
       leftDelta,
@@ -50,33 +49,33 @@ export class PropagationSpringModel extends SpringModel {
         // Left velocity propagation.
         for(let j = 1; j < this.COLUMNS; j++) {
           const index = indexer(i, j)
-          leftDelta[index] = this.roundDecimal(this.S * (heightMap[index] - heightMap[indexer(i, j-1)]))
-          velocityMap[index] += leftDelta[index]
+          leftDelta[index] = this.roundDecimal(this.S * (heightField[index] - heightField[indexer(i, j-1)]))
+          velocityField[index] += leftDelta[index]
           // Clamp to 0.
-          if(velocityMap[index] < 0 ) {
-            velocityMap[index] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[index]))
-          } else if (velocityMap[index] > 0 ) {
-            velocityMap[index] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[index]))
+          if(velocityField[index] < 0 ) {
+            velocityField[index] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(velocityField[index]))
+          } else if (velocityField[index] > 0 ) {
+            velocityField[index] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityField[index]))
           }
         }
         // Right velocity propagation.
         for(let j = 0; j < this.COLUMNS - 1; j++) {
           const index = indexer(i, j)
-          rightDelta[index] = this.roundDecimal(this.S * (heightMap[index] - heightMap[indexer(i, j+1)]))
-          velocityMap[index] += rightDelta[index]
-          if(velocityMap[index] < 0 ) {
-            velocityMap[index] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[index]))
-          } else if (velocityMap[index] > 0 ) {
-            velocityMap[index] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[index]))
+          rightDelta[index] = this.roundDecimal(this.S * (heightField[index] - heightField[indexer(i, j+1)]))
+          velocityField[index] += rightDelta[index]
+          if(velocityField[index] < 0 ) {
+            velocityField[index] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(velocityField[index]))
+          } else if (velocityField[index] > 0 ) {
+            velocityField[index] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityField[index]))
           }
         }
         // Left height propagation
         for(let j = 1; j < this.COLUMNS-1; j++) {
-          heightMap[indexer(i, j-1)] += leftDelta[indexer(i, j)]
+          heightField[indexer(i, j-1)] += leftDelta[indexer(i, j)]
         }
         // Right height propagation
         for(let j = 0; j < this.COLUMNS - 1; j++) {
-          heightMap[indexer(i, j+1)] += rightDelta[indexer(i, j)]
+          heightField[indexer(i, j+1)] += rightDelta[indexer(i, j)]
         }
       }
       // End Horizontal propagation.
@@ -84,29 +83,29 @@ export class PropagationSpringModel extends SpringModel {
       for(let j = 0 ; j < this.COLUMNS; j++) {
         for(let i = 1; i < this.ROWS ; i++) {
           const index = indexer(i, j)
-          topDelta[index] = this.roundDecimal(this.S * ( heightMap[index] - heightMap[indexer(i-1, j)] ))
-          velocityMap[index] += topDelta[index]
-          if(velocityMap[index] < 0) {
-            velocityMap[index] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[index]))
-          } else if (velocityMap[index] > 0) {
-            velocityMap[index] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[index]))
+          topDelta[index] = this.roundDecimal(this.S * ( heightField[index] - heightField[indexer(i-1, j)] ))
+          velocityField[index] += topDelta[index]
+          if(velocityField[index] < 0) {
+            velocityField[index] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(velocityField[index]))
+          } else if (velocityField[index] > 0) {
+            velocityField[index] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityField[index]))
           }
         }
         for(let i = 0; i < this.ROWS - 1; i++) {
           const index = indexer(i, j)
-          bottomDelta[index] = this.S * ( heightMap[index] - heightMap[indexer(i+1, j)] )
-          velocityMap[index] += bottomDelta[index]
-          if(velocityMap[index] < 0) {
-            velocityMap[index] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[index]))
-          } else if (velocityMap[index] > 0) {
-            velocityMap[index] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[index]))
+          bottomDelta[index] = this.S * ( heightField[index] - heightField[indexer(i+1, j)] )
+          velocityField[index] += bottomDelta[index]
+          if(velocityField[index] < 0) {
+            velocityField[index] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(velocityField[index]))
+          } else if (velocityField[index] > 0) {
+            velocityField[index] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityField[index]))
           }
         }
         for(let i = 1; i < this.ROWS; i++) {
-          heightMap[indexer(i-1, j)] += topDelta[indexer(i, j)]
+          heightField[indexer(i-1, j)] += topDelta[indexer(i, j)]
         }
         for(let i = 0; i < this.ROWS - 1; i++) {
-          heightMap[indexer(i+1, j)] += bottomDelta[indexer(i, j)]
+          heightField[indexer(i+1, j)] += bottomDelta[indexer(i, j)]
         }
       }
       // End vertical propagation

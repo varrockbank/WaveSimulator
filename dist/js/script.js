@@ -447,8 +447,8 @@ var PropagationSpringModel = function (_spring_model_1$Sprin) {
         key: "iteratePropagation",
         value: function iteratePropagation() {
             var indexer = this.indexer;
-            var heightMap = this.heightMap;
-            var velocityMap = this.velocityMap;
+            var heightField = this.heightField;
+            var velocityField = this.velocityField;
             var _propagationModelBuff = this.propagationModelBuffers,
                 leftDelta = _propagationModelBuff.leftDelta,
                 rightDelta = _propagationModelBuff.rightDelta,
@@ -466,33 +466,33 @@ var PropagationSpringModel = function (_spring_model_1$Sprin) {
                     // Left velocity propagation.
                     for (var j = 1; j < this.COLUMNS; j++) {
                         var index = indexer(i, j);
-                        leftDelta[index] = this.roundDecimal(this.S * (heightMap[index] - heightMap[indexer(i, j - 1)]));
-                        velocityMap[index] += leftDelta[index];
+                        leftDelta[index] = this.roundDecimal(this.S * (heightField[index] - heightField[indexer(i, j - 1)]));
+                        velocityField[index] += leftDelta[index];
                         // Clamp to 0.
-                        if (velocityMap[index] < 0) {
-                            velocityMap[index] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[index]));
-                        } else if (velocityMap[index] > 0) {
-                            velocityMap[index] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[index]));
+                        if (velocityField[index] < 0) {
+                            velocityField[index] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(velocityField[index]));
+                        } else if (velocityField[index] > 0) {
+                            velocityField[index] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityField[index]));
                         }
                     }
                     // Right velocity propagation.
                     for (var _j = 0; _j < this.COLUMNS - 1; _j++) {
                         var _index = indexer(i, _j);
-                        rightDelta[_index] = this.roundDecimal(this.S * (heightMap[_index] - heightMap[indexer(i, _j + 1)]));
-                        velocityMap[_index] += rightDelta[_index];
-                        if (velocityMap[_index] < 0) {
-                            velocityMap[_index] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[_index]));
-                        } else if (velocityMap[_index] > 0) {
-                            velocityMap[_index] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[_index]));
+                        rightDelta[_index] = this.roundDecimal(this.S * (heightField[_index] - heightField[indexer(i, _j + 1)]));
+                        velocityField[_index] += rightDelta[_index];
+                        if (velocityField[_index] < 0) {
+                            velocityField[_index] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(velocityField[_index]));
+                        } else if (velocityField[_index] > 0) {
+                            velocityField[_index] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityField[_index]));
                         }
                     }
                     // Left height propagation
                     for (var _j2 = 1; _j2 < this.COLUMNS - 1; _j2++) {
-                        heightMap[indexer(i, _j2 - 1)] += leftDelta[indexer(i, _j2)];
+                        heightField[indexer(i, _j2 - 1)] += leftDelta[indexer(i, _j2)];
                     }
                     // Right height propagation
                     for (var _j3 = 0; _j3 < this.COLUMNS - 1; _j3++) {
-                        heightMap[indexer(i, _j3 + 1)] += rightDelta[indexer(i, _j3)];
+                        heightField[indexer(i, _j3 + 1)] += rightDelta[indexer(i, _j3)];
                     }
                 }
                 // End Horizontal propagation.
@@ -500,29 +500,29 @@ var PropagationSpringModel = function (_spring_model_1$Sprin) {
                 for (var _j4 = 0; _j4 < this.COLUMNS; _j4++) {
                     for (var _i = 1; _i < this.ROWS; _i++) {
                         var _index2 = indexer(_i, _j4);
-                        topDelta[_index2] = this.roundDecimal(this.S * (heightMap[_index2] - heightMap[indexer(_i - 1, _j4)]));
-                        velocityMap[_index2] += topDelta[_index2];
-                        if (velocityMap[_index2] < 0) {
-                            velocityMap[_index2] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[_index2]));
-                        } else if (velocityMap[_index2] > 0) {
-                            velocityMap[_index2] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[_index2]));
+                        topDelta[_index2] = this.roundDecimal(this.S * (heightField[_index2] - heightField[indexer(_i - 1, _j4)]));
+                        velocityField[_index2] += topDelta[_index2];
+                        if (velocityField[_index2] < 0) {
+                            velocityField[_index2] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(velocityField[_index2]));
+                        } else if (velocityField[_index2] > 0) {
+                            velocityField[_index2] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityField[_index2]));
                         }
                     }
                     for (var _i2 = 0; _i2 < this.ROWS - 1; _i2++) {
                         var _index3 = indexer(_i2, _j4);
-                        bottomDelta[_index3] = this.S * (heightMap[_index3] - heightMap[indexer(_i2 + 1, _j4)]);
-                        velocityMap[_index3] += bottomDelta[_index3];
-                        if (velocityMap[_index3] < 0) {
-                            velocityMap[_index3] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[_index3]));
-                        } else if (velocityMap[_index3] > 0) {
-                            velocityMap[_index3] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[_index3]));
+                        bottomDelta[_index3] = this.S * (heightField[_index3] - heightField[indexer(_i2 + 1, _j4)]);
+                        velocityField[_index3] += bottomDelta[_index3];
+                        if (velocityField[_index3] < 0) {
+                            velocityField[_index3] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(velocityField[_index3]));
+                        } else if (velocityField[_index3] > 0) {
+                            velocityField[_index3] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityField[_index3]));
                         }
                     }
                     for (var _i3 = 1; _i3 < this.ROWS; _i3++) {
-                        heightMap[indexer(_i3 - 1, _j4)] += topDelta[indexer(_i3, _j4)];
+                        heightField[indexer(_i3 - 1, _j4)] += topDelta[indexer(_i3, _j4)];
                     }
                     for (var _i4 = 0; _i4 < this.ROWS - 1; _i4++) {
-                        heightMap[indexer(_i4 + 1, _j4)] += bottomDelta[indexer(_i4, _j4)];
+                        heightField[indexer(_i4 + 1, _j4)] += bottomDelta[indexer(_i4, _j4)];
                     }
                 }
                 // End vertical propagation
@@ -564,8 +564,8 @@ var SpringModel = function () {
         this.K = 0.03; // Hooke's constant
         this.D = 0.025; // Dampening Factor
         this.TERMINAL_VELOCITY = 1.5;
-        this.heightMap = new Array(ROWS * COLUMNS).fill(0);
-        this.velocityMap = new Array(ROWS * COLUMNS).fill(0);
+        this.heightField = new Array(ROWS * COLUMNS).fill(0);
+        this.velocityField = new Array(ROWS * COLUMNS).fill(0);
         this.indexer = utilities_1.getSingleBufferRowMajorMatrixIndexer(COLUMNS);
     }
 
@@ -573,21 +573,21 @@ var SpringModel = function () {
         key: "iterate",
         value: function iterate() {
             var indexer = this.indexer;
-            var heightMap = this.heightMap;
-            var velocityMap = this.velocityMap;
+            var heightField = this.heightField;
+            var velocityField = this.velocityField;
             var rowNum = this.ROWS;
             while (rowNum--) {
                 var colNum = this.COLUMNS;
                 while (colNum--) {
                     var index = indexer(rowNum, colNum);
-                    var velocity = velocityMap[index];
-                    heightMap[index] += velocity;
+                    var velocity = velocityField[index];
+                    heightField[index] += velocity;
                     var targetHeight = 0;
-                    var height = heightMap[index];
+                    var height = heightField[index];
                     var x = height - targetHeight;
                     var acceleration = -1 * this.K * x - this.D * velocity;
-                    velocityMap[index] += this.roundDecimal(acceleration);
-                    velocityMap[index] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[index]));
+                    velocityField[index] += this.roundDecimal(acceleration);
+                    velocityField[index] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityField[index]));
                 }
             }
         }
@@ -605,10 +605,10 @@ var SpringModel = function () {
     }, {
         key: "getHeightBuffer",
         value: function getHeightBuffer() {
-            var i = this.heightMap.length;
+            var i = this.heightField.length;
             var heightBuffer = new Array(i);
             while (i--) {
-                heightBuffer[i] = this.heightMap[i];
+                heightBuffer[i] = this.heightField[i];
             }return heightBuffer;
         }
     }, {
@@ -617,26 +617,26 @@ var SpringModel = function () {
             var indexer = this.indexer;
             var numCols = this.COLUMNS;
             var numRows = this.ROWS;
-            var heightMap = this.heightMap;
+            var heightField = this.heightField;
             // Seed the first cell.
-            heightMap[indexer(0, 0)] = Math.floor(10 * Math.random()) * utilities_1.getRandomDirection();
+            heightField[indexer(0, 0)] = Math.floor(10 * Math.random()) * utilities_1.getRandomDirection();
             // Random walk along first row.
             for (var j = 1; j < numCols; j++) {
-                var neighborHeight = heightMap[indexer(0, j - 1)];
-                heightMap[indexer(0, j)] = neighborHeight + utilities_1.getRandomDirection();
+                var neighborHeight = heightField[indexer(0, j - 1)];
+                heightField[indexer(0, j)] = neighborHeight + utilities_1.getRandomDirection();
             }
             // Random walk along first column.
             for (var i = 1; i < numRows; i++) {
-                var _neighborHeight = heightMap[indexer(i - 1, 0)];
-                heightMap[indexer(i, 0)] = _neighborHeight + utilities_1.getRandomDirection();
+                var _neighborHeight = heightField[indexer(i - 1, 0)];
+                heightField[indexer(i, 0)] = _neighborHeight + utilities_1.getRandomDirection();
             }
             // Loop over inner cells, assigning height as +-1 from midpoint of top and left neighbor
             for (var _i = 1; _i < numRows; _i++) {
                 for (var _j = 1; _j < numCols; _j++) {
-                    var topNeighbor = heightMap[indexer(_i - 1, _j)];
-                    var leftNeighbor = heightMap[indexer(_i, _j - 1)];
+                    var topNeighbor = heightField[indexer(_i - 1, _j)];
+                    var leftNeighbor = heightField[indexer(_i, _j - 1)];
                     var midpoint = (topNeighbor + leftNeighbor) / 2;
-                    heightMap[indexer(_i, _j)] = Math.round(midpoint) + utilities_1.getRandomDirection();
+                    heightField[indexer(_i, _j)] = Math.round(midpoint) + utilities_1.getRandomDirection();
                 }
             }
         }

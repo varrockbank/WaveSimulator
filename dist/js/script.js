@@ -85,9 +85,7 @@ function makeRowOrderMatrix(rows, columns) {
 exports.makeRowOrderMatrix = makeRowOrderMatrix;
 /**
  * @param m number of columns
- * @param i row number
- * @param j column number
- * @return index into ( m x n ) matrix represented with a 1-d buffer
+ * @return function for indexing into 1-d buffer representing ( m x n ) matrix
  */
 function getSingleBufferRowMajorMatrixIndexer(m) {
     return function (i, j) {
@@ -370,7 +368,7 @@ var Engine = function () {
                         }, 100);
                         break;
                     }
-                case EVENT_KEYS.ITERATE:
+                case EVENT_KEYS.RANDOM:
                     {
                         this.initRandomHeightmap();
                         break;

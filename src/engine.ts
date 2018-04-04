@@ -243,7 +243,7 @@ export class Engine {
         setInterval(() => { this.iterate() }, 100)
         break
       }
-      case EVENT_KEYS.ITERATE: {
+      case EVENT_KEYS.RANDOM: {
         this.initRandomHeightmap()
         break
       }

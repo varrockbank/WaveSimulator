@@ -1,5 +1,5 @@
 import { SpringModel } from "./spring_model"
-import { makeRowOrderMatrix } from "./utilities"
+import { makeRowOrderMatrix , getSingleBufferRowMajorMatrixIndexer } from "./utilities"
 
 /**
  * SpringModel models each point in the plane as an independent spring without lateral interaction.
@@ -8,45 +8,45 @@ import { makeRowOrderMatrix } from "./utilities"
 export class PropagationSpringModel extends SpringModel {
 
   private propagationModelBuffers: {
-    leftDelta: number[][],
-    rightDelta: number[][],
-    topDelta: number[][],
-    bottomDelta: number[][],
+    leftDelta: number[],
+    rightDelta: number[],
+    topDelta: number[],
+    bottomDelta: number[],
   }
 
   // Physics parameters.
   private S = 0.0005 // Wave spread.
   private BACK_PROPAGATIONS = 4
 
+  private indexer: (i, j) => number
+
   constructor(ROWS: number, COLUMNS: number) {
     super(ROWS, COLUMNS)
     this.propagationModelBuffers = {
-      leftDelta: makeRowOrderMatrix(ROWS, COLUMNS),
-      rightDelta: makeRowOrderMatrix(ROWS, COLUMNS),
-      topDelta: makeRowOrderMatrix(ROWS, COLUMNS),
-      bottomDelta: makeRowOrderMatrix(ROWS, COLUMNS),
+      leftDelta: new Array(ROWS * COLUMNS),
+      rightDelta: new Array(ROWS * COLUMNS),
+      topDelta: new Array(ROWS * COLUMNS),
+      bottomDelta: new Array(ROWS * COLUMNS)
     }
+    this.indexer = getSingleBufferRowMajorMatrixIndexer(COLUMNS)
   }
 
   public iteratePropagation() {
+    const indexer = this.indexer
     const heightMap = this.heightMap
     const velocityMap = this.velocityMap 
 
-    const {
+    let {
       leftDelta,
       rightDelta,
       topDelta,
       bottomDelta,
     } = this.propagationModelBuffers
     // Clear deltas.
-    for(let i = 0 ; i < this.ROWS; i++) {
-      leftDelta[i] = leftDelta[i].fill(0)
-      rightDelta[i] = rightDelta[i].fill(0)
-    }
-    for(let i = 0 ; i < this.COLUMNS; i++) {
-      topDelta[i] = topDelta[i].fill(0)
-      bottomDelta[i] = bottomDelta[i].fill(0)
-    }
+    leftDelta = leftDelta.fill(0)
+    rightDelta = rightDelta.fill(0)
+    topDelta = topDelta.fill(0)
+    bottomDelta = bottomDelta.fill(0)
 
     for(let l = 0 ; l < this.BACK_PROPAGATIONS; l++) {
       // Horizontal propagation
@@ -55,8 +55,8 @@ export class PropagationSpringModel extends SpringModel {
         const rowVelocity = velocityMap[i]
         // Left velocity propagation.
         for(let j = 1; j < heightRow.length; j++) {
-          leftDelta[i][j] = this.roundDecimal(this.S * (heightRow[j] - heightRow[j-1]))
-          rowVelocity[j] += leftDelta[i][j]
+          leftDelta[indexer(i, j)] = this.roundDecimal(this.S * (heightRow[j] - heightRow[j-1]))
+          rowVelocity[j] += leftDelta[indexer(i, j)]
           if(rowVelocity[j] < 0 ) {
             rowVelocity[j] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(rowVelocity[j]))            
           } else if (rowVelocity[j] > 0 ) {
@@ -65,8 +65,8 @@ export class PropagationSpringModel extends SpringModel {
         }
         // Right velocity propagation.
         for(let j = 0; j < heightRow.length - 1; j++) {
-          rightDelta[i][j] = this.roundDecimal(this.S * (heightRow[j] - heightRow[j+1]))
-          rowVelocity[j] += rightDelta[i][j]
+          rightDelta[indexer(i, j)] = this.roundDecimal(this.S * (heightRow[j] - heightRow[j+1]))
+          rowVelocity[j] += rightDelta[indexer(i, j)]
           if(rowVelocity[j] < 0 ) {
             rowVelocity[j] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(rowVelocity[j]))
           } else if (rowVelocity[j] > 0 ) {
@@ -75,19 +75,19 @@ export class PropagationSpringModel extends SpringModel {
         }
         // Left height propagation
         for(let j = 1; j < heightRow.length; j++) {
-          heightMap[i][j-1] += leftDelta[i][j]
+          heightMap[i][j-1] += leftDelta[indexer(i, j)]
         }
         // Right height propagation
         for(let j = 0; j < heightRow.length - 1; j++) {
-          heightMap[i][j+1] += rightDelta[i][j]
+          heightMap[i][j+1] += rightDelta[indexer(i, j)]
         }
       }
       // End Horizontal propagation.
       // Vertical propagation.
       for(let j = 0 ; j < heightMap[0].length; j++) {
         for(let i = 1; i < heightMap.length; i++) {
-          topDelta[i][j] = this.roundDecimal(this.S * ( heightMap[i][j] - heightMap[i-1][j] ))
-          velocityMap[i][j] += topDelta[i][j]
+          topDelta[indexer(i, j)] = this.roundDecimal(this.S * ( heightMap[i][j] - heightMap[i-1][j] ))
+          velocityMap[i][j] += topDelta[indexer(i, j)]
           if(velocityMap[i][j] < 0) {
             velocityMap[i][j] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[i][j]))            
           } else if (velocityMap[i][j] > 0) {
@@ -95,8 +95,8 @@ export class PropagationSpringModel extends SpringModel {
           }
         }
         for(let i = 0; i < heightMap.length - 1; i++) {
-          bottomDelta[i][j] = this.S * ( heightMap[i][j] - heightMap[i+1][j] )
-          velocityMap[i][j] += bottomDelta[i][j]
+          bottomDelta[indexer(i, j)] = this.S * ( heightMap[i][j] - heightMap[i+1][j] )
+          velocityMap[i][j] += bottomDelta[indexer(i, j)]
           if(velocityMap[i][j] < 0) {
             velocityMap[i][j] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[i][j]))            
           } else if (velocityMap[i][j] > 0) {
@@ -104,10 +104,10 @@ export class PropagationSpringModel extends SpringModel {
           }
         }
         for(let i = 1; i < heightMap.length; i++) {
-          heightMap[i-1][j] += topDelta[i][j]
+          heightMap[i-1][j] += topDelta[indexer(i, j)]
         }
         for(let i = 0; i < heightMap.length - 1; i++) {
-          heightMap[i+1][j] += bottomDelta[i][j]
+          heightMap[i+1][j] += bottomDelta[indexer(i, j)]
         }
       }
       // End vertical propagation

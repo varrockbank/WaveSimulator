@@ -50,15 +50,15 @@ export class SpringModel {
     return Math.round(num * 10000) / 10000
   }
 
-  getHeightMap() {
-    const heightMap = makeRowOrderMatrix(this.ROWS, this.COLUMNS)
-    const indexer = this.indexer
-    let i = this.ROWS
-    while(i--) {
-      let j = this.COLUMNS
-      while(j--) heightMap[i][j] = this.heightMap[indexer(i, j)]
-    }
-    return heightMap
+  /**
+   * @return copy of height buffer
+   */
+  getHeightBuffer() {
+    let i = this.heightMap.length
+    const heightBuffer = (new Array(i))
+    while(i--)
+      heightBuffer[i] = this.heightMap[i]
+    return heightBuffer
   }
 
   initRandomHeight() {

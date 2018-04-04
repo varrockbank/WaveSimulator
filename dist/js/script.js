@@ -155,6 +155,7 @@ var Engine = function () {
         console.assert(this.ROWS > 0);
         console.assert(this.COLUMNS > 0);
         this.vertexIndexer = utilities_1.getSingleBufferRowMajorMatrixIndexer(this.COLUMNS + 1);
+        this.heightMapIndexer = utilities_1.getSingleBufferRowMajorMatrixIndexer(this.COLUMNS + 1);
         // Instance Scene.
         this.scene = new THREE.Scene();
         // Instantiate Camera.
@@ -186,7 +187,7 @@ var Engine = function () {
         this.animate();
         this.addEventListeners();
         this.propagationSpringModel = new propagation_spring_model_1.PropagationSpringModel(this.ROWS + 1, this.COLUMNS + 1);
-        this.heightMap = utilities_1.makeRowOrderMatrix(this.ROWS, this.COLUMNS);
+        this.heightMap = new Array(this.ROW_VERTICES * this.COLUMN_VERTICES).fill(0);
         this.initRandomHeightmap();
         this.rippleModel = new ripple_model_1.RippleModel(this.ROWS + 1, this.COLUMNS + 1);
         this.renderer.gammaInput = true;
@@ -223,26 +224,24 @@ var Engine = function () {
             // TODO: Add floating point rounding method
             // TODO: run this at half time step
             this.rippleModel.iterate();
-            var rippleHeightMap = this.rippleModel.getHeightMap();
-            this.heightMap = this.propagationSpringModel.getHeightMap();
-            for (var i = 0; i < this.ROW_VERTICES; i++) {
-                for (var j = 0; j < this.COLUMN_VERTICES; j++) {
-                    this.heightMap[i][j] += rippleHeightMap[i][j];
-                }
-            }
-            this.applyHeightmapToGeometry();
+            var rippleHeightBuffer = this.rippleModel.getHeightBuffer();
+            this.heightMap = this.propagationSpringModel.getHeightBuffer();
+            var i = this.heightMap.length;
+            while (i--) {
+                this.heightMap[i] += rippleHeightBuffer[i];
+            }this.applyHeightmapToGeometry();
             this.digestGeometry();
         }
     }, {
         key: "applyHeightmapToGeometry",
         value: function applyHeightmapToGeometry() {
             var heightMap = this.heightMap;
-            var rowNum = heightMap.length;
+            var rowNum = this.ROW_VERTICES;
             while (rowNum--) {
-                var row = heightMap[rowNum];
-                var colNum = row.length;
+                var colNum = this.COLUMN_VERTICES;
                 while (colNum--) {
-                    var height = this.heightMap[rowNum][colNum];
+                    var index = this.heightMapIndexer(rowNum, colNum);
+                    var height = this.heightMap[index];
                     var verticeIndex = this.vertexIndexer(rowNum, colNum);
                     this.updateVertex(verticeIndex, height);
                 }
@@ -252,7 +251,7 @@ var Engine = function () {
         key: "initRandomHeightmap",
         value: function initRandomHeightmap() {
             this.propagationSpringModel.initRandomHeight();
-            this.heightMap = this.propagationSpringModel.getHeightMap();
+            this.heightMap = this.propagationSpringModel.getHeightBuffer();
             this.applyHeightmapToGeometry();
             this.digestGeometry();
         }
@@ -420,19 +419,18 @@ var RippleModel = function () {
                 }
             }
         }
+        /**
+         * @return copy of height buffer
+         */
+
     }, {
-        key: "getHeightMap",
-        value: function getHeightMap() {
-            var heightMap = utilities_1.makeRowOrderMatrix(this.M, this.N),
-                indexer = this.indexer;
-            var i = this.M;
+        key: "getHeightBuffer",
+        value: function getHeightBuffer() {
+            var i = this.heightField.length;
+            var heightBuffer = new Array(i);
             while (i--) {
-                var j = this.N;
-                while (j--) {
-                    heightMap[i][j] = this.heightField[indexer(i, j)];
-                }
-            }
-            return heightMap;
+                heightBuffer[i] = this.heightField[i];
+            }return heightBuffer;
         }
     }, {
         key: "applyImpression",
@@ -643,19 +641,18 @@ var SpringModel = function () {
         value: function roundDecimal(num) {
             return Math.round(num * 10000) / 10000;
         }
+        /**
+         * @return copy of height buffer
+         */
+
     }, {
-        key: "getHeightMap",
-        value: function getHeightMap() {
-            var heightMap = utilities_1.makeRowOrderMatrix(this.ROWS, this.COLUMNS);
-            var indexer = this.indexer;
-            var i = this.ROWS;
+        key: "getHeightBuffer",
+        value: function getHeightBuffer() {
+            var i = this.heightMap.length;
+            var heightBuffer = new Array(i);
             while (i--) {
-                var j = this.COLUMNS;
-                while (j--) {
-                    heightMap[i][j] = this.heightMap[indexer(i, j)];
-                }
-            }
-            return heightMap;
+                heightBuffer[i] = this.heightMap[i];
+            }return heightBuffer;
         }
     }, {
         key: "initRandomHeight",

@@ -24,7 +24,9 @@ export class Engine {
 
   private propagationSpringModel: PropagationSpringModel
   private rippleModel: RippleModel
-  private heightMap: number[][]
+
+  private heightMap: number[]
+  private heightMapIndexer
 
   private vertexIndexer
 
@@ -43,6 +45,8 @@ export class Engine {
     console.assert(this.COLUMNS > 0)
 
     this.vertexIndexer = getSingleBufferRowMajorMatrixIndexer(this.COLUMNS + 1)
+    this.heightMapIndexer = getSingleBufferRowMajorMatrixIndexer(this.COLUMNS + 1)
+
     // Instance Scene.
     this.scene = new THREE.Scene()
     // Instantiate Camera.
@@ -81,7 +85,7 @@ export class Engine {
     this.addEventListeners()
 
     this.propagationSpringModel = new PropagationSpringModel(this.ROWS + 1 , this.COLUMNS + 1)
-    this.heightMap = makeRowOrderMatrix(this.ROWS, this.COLUMNS)
+    this.heightMap = (new Array(this.ROW_VERTICES * this.COLUMN_VERTICES)).fill(0)
     this.initRandomHeightmap()
     this.rippleModel = new RippleModel(this.ROWS + 1, this.COLUMNS + 1)
 
@@ -122,13 +126,11 @@ export class Engine {
 
     // TODO: run this at half time step
     this.rippleModel.iterate()
-    const rippleHeightMap = this.rippleModel.getHeightMap();
-    this.heightMap = this.propagationSpringModel.getHeightMap()
-    for(let i = 0; i < this.ROW_VERTICES ; i++) {
-      for(let j = 0 ; j < this.COLUMN_VERTICES ; j++) {
-        this.heightMap[i][j] += rippleHeightMap[i][j]
-      }
-    }
+    const rippleHeightBuffer = this.rippleModel.getHeightBuffer();
+    this.heightMap = this.propagationSpringModel.getHeightBuffer()
+    let i = this.heightMap.length
+    while(i--)
+      this.heightMap[i] += rippleHeightBuffer[i]
 
     this.applyHeightmapToGeometry()
 
@@ -137,12 +139,12 @@ export class Engine {
 
   private applyHeightmapToGeometry() {
     const heightMap = this.heightMap
-    let rowNum = heightMap.length
+    let rowNum = this.ROW_VERTICES
     while(rowNum--) {
-      const row = heightMap[rowNum]
-      let colNum = row.length
+      let colNum = this.COLUMN_VERTICES
       while(colNum--) {
-        const height = this.heightMap[rowNum][colNum]
+        const index = this.heightMapIndexer(rowNum, colNum)
+        const height = this.heightMap[index]
         const verticeIndex = this.vertexIndexer(rowNum, colNum)
         this.updateVertex(verticeIndex, height)
       }
@@ -151,7 +153,7 @@ export class Engine {
 
   private initRandomHeightmap() {
     this.propagationSpringModel.initRandomHeight()
-    this.heightMap = this.propagationSpringModel.getHeightMap()
+    this.heightMap = this.propagationSpringModel.getHeightBuffer()
     this.applyHeightmapToGeometry()
     this.digestGeometry()
   }

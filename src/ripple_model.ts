@@ -54,15 +54,15 @@ export class RippleModel {
     }
   }
 
-  public getHeightMap() {
-    const heightMap = makeRowOrderMatrix(this.M, this.N),
-        indexer = this.indexer
-    let i = this.M
-    while(i--) {
-      let j = this.N
-      while(j--) heightMap[i][j] = this.heightField[indexer(i, j)]
-    }
-    return heightMap
+  /**
+   * @return copy of height buffer
+   */
+  getHeightBuffer() {
+    let i = this.heightField.length
+    const heightBuffer = (new Array(i))
+    while(i--)
+      heightBuffer[i] = this.heightField[i]
+    return heightBuffer
   }
 
   public applyImpression(rowIndex, columnIndex) {

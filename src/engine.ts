@@ -179,32 +179,27 @@ export class Engine {
   }
 
   private initRandomHeightmap() {
-    // TODO: decouple the engine's heightmap from spring model.
-    const heightMap = this.propagationSpringModel.heightMap
     const numCols = this.COLUMN_VERTICES
     const numRows = this.ROW_VERTICES
     // Seed the first cell.
-    heightMap[0][0] = Math.floor(5 * Math.random()) * this.getRandomDirection()
+    this.propagationSpringModel.set(0, 0, Math.floor(5 * Math.random()) * this.getRandomDirection())
     // Random walk along first row.
-    const firstRow = heightMap[0]
     for(let j = 1 ; j < numCols ; j++) {
-      const neighborHeight = firstRow[j-1]
-      firstRow[j] = neighborHeight + this.getRandomDirection()
+      const neighborHeight = this.propagationSpringModel.get(0, j-1)
+      this.propagationSpringModel.set(0, j, neighborHeight + this.getRandomDirection())
     }
     // Random walk along first column.
     for(let i = 1 ; i < numRows ; i++) {
-      const neighborHeight = heightMap[i-1][0];
-      heightMap[i][0] = neighborHeight + this.getRandomDirection()
+      const neighborHeight = this.propagationSpringModel.get(i-1, 0)
+      this.propagationSpringModel.set(i, 0, neighborHeight + this.getRandomDirection())
     }
     // Loop over inner cells, assigning height as +-1 from midpoint of top and left neighbor
     for(let i = 1 ; i < numRows ; i++) {
-      const row = heightMap[i]
-      const rowAbove = heightMap[i-1]
       for(let j = 1 ; j < numCols ; j++) {
-        const topNeighbor = rowAbove[j]
-        const leftNeighbor = row[j-1]
-        const midpoint = ( topNeighbor + leftNeighbor ) /2
-        heightMap[i][j] = Math.round(midpoint) + this.getRandomDirection()
+        const topNeighbor = this.propagationSpringModel.get(i-1, j)
+        const leftNeighbor = this.propagationSpringModel.get(i, j-1)
+        const midpoint = ( topNeighbor + leftNeighbor ) / 2
+        this.propagationSpringModel.set(i, j, Math.round(midpoint) + this.getRandomDirection())
       }
     }
     this.heightMap = this.propagationSpringModel.getHeightMap()

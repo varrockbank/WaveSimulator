@@ -6,7 +6,7 @@ import { makeRowOrderMatrix, getSingleBufferRowMajorMatrixIndexer } from "./util
  * Lower dimensional variant: https://gamedevelopment.tutsplus.com/tutorials/make-a-splash-with-dynamic-2d-water-effects--gamedev-236
  */
 export class SpringModel {
-  public heightMap: number[][]
+  public heightMap: number[]
   public velocityMap: number[][]
 
   // Physics parameters.
@@ -17,28 +17,27 @@ export class SpringModel {
   protected indexer: (i, j) => number
 
   constructor(protected readonly ROWS, protected readonly COLUMNS) {
-    this.heightMap = makeRowOrderMatrix(ROWS, COLUMNS)
+    this.heightMap = (new Array(ROWS * COLUMNS)).fill(0)
     this.velocityMap = makeRowOrderMatrix(ROWS, COLUMNS)
     this.indexer = getSingleBufferRowMajorMatrixIndexer(COLUMNS)
   }
 
   iterate() {
+    const indexer = this.indexer
     const heightMap = this.heightMap
     const velocityMap = this.velocityMap
 
-    console.assert(heightMap.length == velocityMap.length)
-    let rowNum = heightMap.length
+    let rowNum = this.ROWS
     while(rowNum--) {
-      const heightRow = heightMap[rowNum]
       const velocityRow = velocityMap[rowNum]
-      console.assert(heightRow.length == velocityRow.length)
-      let colNum = heightRow.length
+      let colNum = this.COLUMNS
       while(colNum--) {
+        const index = indexer(rowNum, colNum)
         const velocity = velocityRow[colNum]
-        heightRow[colNum] += velocity
+        heightMap[index] += velocity
 
         const targetHeight = 0
-        const height = heightRow[colNum]
+        const height = heightMap[index]
         const x = height - targetHeight
         const acceleration = (-1 * this.K * x) - ( this.D * velocity)
         velocityRow[colNum] += this.roundDecimal(acceleration)
@@ -58,7 +57,7 @@ export class SpringModel {
     let i = this.ROWS
     while(i--) {
       let j = this.COLUMNS
-      while(j--) heightMap[i][j] = this.heightMap[i][j]
+      while(j--) heightMap[i][j] = this.heightMap[indexer(i, j)]
     }
     return heightMap
   }

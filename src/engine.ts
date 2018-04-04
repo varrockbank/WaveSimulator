@@ -38,6 +38,9 @@ export class Engine {
   private waves: Wave[] = []
 
   constructor () {
+    console.assert(this.ROWS > 0)
+    console.assert(this.COLUMNS > 0)
+
     // Instance Scene.
     this.scene = new THREE.Scene()
     // Instantiate Camera.

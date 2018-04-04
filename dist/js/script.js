@@ -152,9 +152,9 @@ var Engine = function () {
         this.PLANE_HEIGHT = 100;
         this.CELL_HEIGHT = this.PLANE_HEIGHT / this.ROWS;
         this.CELL_WIDTH = this.PLANE_WIDTH / this.COLUMNS;
-        this.waves = [];
         console.assert(this.ROWS > 0);
         console.assert(this.COLUMNS > 0);
+        this.vertexIndexer = utilities_1.getSingleBufferRowMajorMatrixIndexer(this.COLUMNS + 1);
         // Instance Scene.
         this.scene = new THREE.Scene();
         // Instantiate Camera.
@@ -231,7 +231,6 @@ var Engine = function () {
                 }
             }
             this.applyHeightmapToGeometry();
-            this.applyWavesToGeometry();
             this.digestGeometry();
         }
     }, {
@@ -244,36 +243,8 @@ var Engine = function () {
                 var colNum = row.length;
                 while (colNum--) {
                     var height = this.heightMap[rowNum][colNum];
-                    var verticeIndex = this.getVerticeIndex(rowNum, colNum);
+                    var verticeIndex = this.vertexIndexer(rowNum, colNum);
                     this.updateVertex(verticeIndex, height);
-                }
-            }
-        }
-    }, {
-        key: "applyWavesToGeometry",
-        value: function applyWavesToGeometry() {
-            var numWaves = this.waves.length;
-            while (numWaves--) {
-                var wave = this.waves[numWaves];
-                var points = wave.getPoints();
-                var numPoints = points.length;
-                while (numPoints--) {
-                    var _points$numPoints = points[numPoints],
-                        x = _points$numPoints.x,
-                        y = _points$numPoints.y,
-                        z = _points$numPoints.z;
-
-                    var verticeIndex = this.getVerticeIndex(y, x);
-                    // Avoid wave points outside boundary plane.
-                    if (verticeIndex >= 0) {
-                        var currHeight = this.propagationSpringModel.heightMap[y][x];
-                        var aggregate = z + currHeight;
-                        this.updateVertex(verticeIndex, aggregate);
-                    }
-                }
-                // State step wave, removing from collection if reached end of lifecycle.
-                if (wave.step()) {
-                    this.waves.splice(numWaves, 1);
                 }
             }
         }
@@ -377,16 +348,9 @@ var Engine = function () {
 
                 var columnIndex = Math.round(x / this.CELL_WIDTH) + this.COLUMNS / 2;
                 var rowIndex = -1 * Math.round(y / this.CELL_HEIGHT) + this.ROWS / 2;
-                // this.waves.push( new Wave({x: columnIndex, y: rowIndex}) )
                 this.rippleModel.applyImpression(rowIndex, columnIndex);
                 this.iterate();
             }
-        }
-    }, {
-        key: "getVerticeIndex",
-        value: function getVerticeIndex(rowIndex, columnIndex) {
-            var index = rowIndex * this.COLUMN_VERTICES + columnIndex;
-            return index > this.NUM_VERTICES ? -1 : index;
         }
     }]);
 

@@ -1,6 +1,6 @@
 // This resulted in really funky waves
 
-import { Wave } from "../wave";
+import { Wave } from "./wave";
 
 interface Point {
   x: number,

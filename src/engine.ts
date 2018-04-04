@@ -1,7 +1,6 @@
-import { Wave } from "./wave"
 import { RippleModel } from "./ripple_model"
 import { PropagationSpringModel } from "./propagation_spring_model"
-import { makeRowOrderMatrix } from "./utilities"
+import { makeRowOrderMatrix , getSingleBufferRowMajorMatrixIndexer } from "./utilities"
 
 const EVENT_KEYS = {
   ITERATE: 'x',
@@ -27,6 +26,8 @@ export class Engine {
   private rippleModel: RippleModel
   private heightMap: number[][]
 
+  private vertexIndexer
+
   private scene: THREE.Scene
   private camera: THREE.Camera
   private renderer: THREE.WebGLRenderer
@@ -37,12 +38,11 @@ export class Engine {
   private planeUUID: string
   private geometry: THREE.Geometry
 
-  private waves: Wave[] = []
-
   constructor () {
     console.assert(this.ROWS > 0)
     console.assert(this.COLUMNS > 0)
 
+    this.vertexIndexer = getSingleBufferRowMajorMatrixIndexer(this.COLUMNS + 1)
     // Instance Scene.
     this.scene = new THREE.Scene()
     // Instantiate Camera.
@@ -131,7 +131,6 @@ export class Engine {
     }
 
     this.applyHeightmapToGeometry()
-    this.applyWavesToGeometry()
 
     this.digestGeometry()
   }
@@ -144,31 +143,8 @@ export class Engine {
       let colNum = row.length
       while(colNum--) {
         const height = this.heightMap[rowNum][colNum]
-        const verticeIndex = this.getVerticeIndex(rowNum, colNum)
+        const verticeIndex = this.vertexIndexer(rowNum, colNum)
         this.updateVertex(verticeIndex, height)
-      }
-    }
-  }
-
-  private applyWavesToGeometry() {
-    let numWaves = this.waves.length
-    while(numWaves--) {
-      const wave = this.waves[numWaves]
-      const points = wave.getPoints()
-      let numPoints = points.length
-      while(numPoints--)  {
-        const {x, y, z} = points[numPoints]
-        const verticeIndex = this.getVerticeIndex(y, x)
-        // Avoid wave points outside boundary plane.
-        if(verticeIndex >= 0) {
-          const currHeight = this.propagationSpringModel.heightMap[y][x]
-          const aggregate = z + currHeight
-          this.updateVertex(verticeIndex, aggregate)
-        }
-      }
-      // State step wave, removing from collection if reached end of lifecycle.
-      if(wave.step()) {
-        this.waves.splice(numWaves, 1)
       }
     }
   }
@@ -236,15 +212,9 @@ export class Engine {
       // Translate coordinates to vertices' indexing.
       const columnIndex = Math.round( x / this.CELL_WIDTH ) + ( this.COLUMNS / 2 )
       const rowIndex = -1 * Math.round( y / this.CELL_HEIGHT ) + ( this.ROWS / 2 )
-      // this.waves.push( new Wave({x: columnIndex, y: rowIndex}) )
       this.rippleModel.applyImpression(rowIndex, columnIndex)
 
       this.iterate()
     }
-  }
-
-  private getVerticeIndex(rowIndex, columnIndex) {
-    const index = rowIndex * this.COLUMN_VERTICES + columnIndex
-    return index > this.NUM_VERTICES ? -1 : index
   }
 }

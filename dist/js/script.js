@@ -72,32 +72,20 @@
 
 Object.defineProperty(exports, "__esModule", { value: true });
 /**
- * @param rows Number of rows
- * @param columns number of columns
- * @return row-order zero matrix
- */
-function makeRowOrderMatrix(rows, columns) {
-    var matrix = new Array(rows);
-    while (rows--) {
-        matrix[rows] = new Array(columns).fill(0);
-    }return matrix;
-}
-exports.makeRowOrderMatrix = makeRowOrderMatrix;
-/**
  * @param m number of columns
  * @return function for indexing into 1-d buffer representing ( m x n ) matrix
  */
 function getSingleBufferRowMajorMatrixIndexer(m) {
-    return function (i, j) {
-        return i * m + j;
-    };
+  return function (i, j) {
+    return i * m + j;
+  };
 }
 exports.getSingleBufferRowMajorMatrixIndexer = getSingleBufferRowMajorMatrixIndexer;
 /**
  * @return Random number in [-1, 0, 1]
  */
 function getRandomDirection() {
-    return Math.floor(3 * Math.random()) - 1;
+  return Math.floor(3 * Math.random()) - 1;
 }
 exports.getRandomDirection = getRandomDirection;
 
@@ -130,7 +118,6 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 Object.defineProperty(exports, "__esModule", { value: true });
 var ripple_model_1 = __webpack_require__(3);
 var propagation_spring_model_1 = __webpack_require__(4);
-var utilities_1 = __webpack_require__(0);
 var EVENT_KEYS = {
     ITERATE: 'x',
     RUN: 'y',
@@ -154,8 +141,6 @@ var Engine = function () {
         this.CELL_WIDTH = this.PLANE_WIDTH / this.COLUMNS;
         console.assert(this.ROWS > 0);
         console.assert(this.COLUMNS > 0);
-        this.vertexIndexer = utilities_1.getSingleBufferRowMajorMatrixIndexer(this.COLUMNS + 1);
-        this.heightMapIndexer = utilities_1.getSingleBufferRowMajorMatrixIndexer(this.COLUMNS + 1);
         // Instance Scene.
         this.scene = new THREE.Scene();
         // Instantiate Camera.
@@ -236,15 +221,9 @@ var Engine = function () {
         key: "applyHeightmapToGeometry",
         value: function applyHeightmapToGeometry() {
             var heightMap = this.heightMap;
-            var rowNum = this.ROW_VERTICES;
-            while (rowNum--) {
-                var colNum = this.COLUMN_VERTICES;
-                while (colNum--) {
-                    var index = this.heightMapIndexer(rowNum, colNum);
-                    var height = this.heightMap[index];
-                    var verticeIndex = this.vertexIndexer(rowNum, colNum);
-                    this.updateVertex(verticeIndex, height);
-                }
+            var i = heightMap.length;
+            while (i--) {
+                this.geometry.vertices[i].z = this.heightMap[i];
             }
         }
     }, {
@@ -265,15 +244,6 @@ var Engine = function () {
             });
             this.controls.update();
             this.renderer.render(this.scene, this.camera);
-        }
-    }, {
-        key: "updateVertex",
-        value: function updateVertex(verticeIndex, height) {
-            if (height != undefined && height != null) {
-                this.geometry.vertices[verticeIndex].z = height;
-            } else {
-                this.geometry.vertices[verticeIndex].z++;
-            }
         }
     }, {
         key: "digestGeometry",

@@ -1,6 +1,5 @@
 import { RippleModel } from "./ripple_model"
 import { PropagationSpringModel } from "./propagation_spring_model"
-import { makeRowOrderMatrix , getSingleBufferRowMajorMatrixIndexer } from "./utilities"
 
 const EVENT_KEYS = {
   ITERATE: 'x',
@@ -26,9 +25,6 @@ export class Engine {
   private rippleModel: RippleModel
 
   private heightMap: number[]
-  private heightMapIndexer
-
-  private vertexIndexer
 
   private scene: THREE.Scene
   private camera: THREE.Camera
@@ -43,9 +39,6 @@ export class Engine {
   constructor () {
     console.assert(this.ROWS > 0)
     console.assert(this.COLUMNS > 0)
-
-    this.vertexIndexer = getSingleBufferRowMajorMatrixIndexer(this.COLUMNS + 1)
-    this.heightMapIndexer = getSingleBufferRowMajorMatrixIndexer(this.COLUMNS + 1)
 
     // Instance Scene.
     this.scene = new THREE.Scene()
@@ -139,16 +132,9 @@ export class Engine {
 
   private applyHeightmapToGeometry() {
     const heightMap = this.heightMap
-    let rowNum = this.ROW_VERTICES
-    while(rowNum--) {
-      let colNum = this.COLUMN_VERTICES
-      while(colNum--) {
-        const index = this.heightMapIndexer(rowNum, colNum)
-        const height = this.heightMap[index]
-        const verticeIndex = this.vertexIndexer(rowNum, colNum)
-        this.updateVertex(verticeIndex, height)
-      }
-    }
+    let i = heightMap.length
+    while(i--)
+      this.geometry.vertices[i].z = this.heightMap[i]
   }
 
   private initRandomHeightmap() {
@@ -162,14 +148,6 @@ export class Engine {
     requestAnimationFrame(() => { this.animate() })
     this.controls.update()
     this.renderer.render(this.scene, this.camera)
-  }
-
-  private updateVertex(verticeIndex, height?) {
-    if(height != undefined && height != null) {
-      this.geometry.vertices[verticeIndex].z = height;
-    } else {
-      this.geometry.vertices[verticeIndex].z++ 
-    }
   }
 
   private digestGeometry() {

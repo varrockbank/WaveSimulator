@@ -1,4 +1,4 @@
-import { makeRowOrderMatrix, getSingleBufferRowMajorMatrixIndexer, getRandomDirection} from "./utilities"
+import { getSingleBufferRowMajorMatrixIndexer, getRandomDirection} from "./utilities"
 
 /**
  * Models water surface as springs along the z-axis.

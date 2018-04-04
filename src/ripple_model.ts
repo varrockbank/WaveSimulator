@@ -1,4 +1,4 @@
-import { makeRowOrderMatrix, getSingleBufferRowMajorMatrixIndexer} from "./utilities"
+import { getSingleBufferRowMajorMatrixIndexer} from "./utilities"
 
 /**
  * A heightfield based ripple model which updates points with average of neighbors from previous

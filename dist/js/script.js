@@ -446,7 +446,7 @@ var RippleModel = function () {
 
         this.M = M;
         this.N = N;
-        // Physics constants.
+        // Physics constants:
         // Dampening value between 0 and 1 inclusive.
         this.D = .95;
         this.heightField = new Array(M * N).fill(0);
@@ -456,31 +456,40 @@ var RippleModel = function () {
     _createClass(RippleModel, [{
         key: "iterate",
         value: function iterate() {
-            for (var _i = 0; _i < this.M; _i++) {
-                for (var j = 0; j < this.N; j++) {
-                    var index = utilities_1.getSingleBufferRowMajorMatrixIndex(this.N, _i, j);
-                    var elements = [this.heightField_prev[utilities_1.getSingleBufferRowMajorMatrixIndex(this.N, Math.min(_i + 1, this.M - 1), j)], this.heightField_prev[utilities_1.getSingleBufferRowMajorMatrixIndex(this.N, Math.max(_i - 1, 0), j)], this.heightField_prev[utilities_1.getSingleBufferRowMajorMatrixIndex(this.N, _i, Math.max(j - 1, 0))], this.heightField_prev[utilities_1.getSingleBufferRowMajorMatrixIndex(this.N, _i, Math.min(j + 1, this.N - 1))], this.heightField_prev[utilities_1.getSingleBufferRowMajorMatrixIndex(this.N, Math.min(_i + 1, this.M - 1), Math.max(j - 1, 0))], this.heightField_prev[utilities_1.getSingleBufferRowMajorMatrixIndex(this.N, Math.min(_i + 1, this.M - 1), Math.min(j + 1, this.N - 1))], this.heightField_prev[utilities_1.getSingleBufferRowMajorMatrixIndex(this.N, Math.max(_i - 1, 0), Math.max(j - 1, 0))], this.heightField_prev[utilities_1.getSingleBufferRowMajorMatrixIndex(this.N, Math.max(_i - 1, 0), Math.min(j + 1, this.N - 1))]];
-                    // TODO: Don't give each each neighbor equal weight
-                    this.heightField[index] += elements.reduce(function (total, num) {
-                        return total + num;
-                    }) / 8 - this.heightField_prev[index];
-                    this.heightField[_i] *= this.D;
+            {
+                var i = this.M;
+                while (i--) {
+                    var j = this.N;
+                    while (j--) {
+                        var index = utilities_1.getSingleBufferRowMajorMatrixIndex(this.N, i, j);
+                        var elements = [this.heightField_prev[utilities_1.getSingleBufferRowMajorMatrixIndex(this.N, Math.min(i + 1, this.M - 1), j)], this.heightField_prev[utilities_1.getSingleBufferRowMajorMatrixIndex(this.N, Math.max(i - 1, 0), j)], this.heightField_prev[utilities_1.getSingleBufferRowMajorMatrixIndex(this.N, i, Math.max(j - 1, 0))], this.heightField_prev[utilities_1.getSingleBufferRowMajorMatrixIndex(this.N, i, Math.min(j + 1, this.N - 1))], this.heightField_prev[utilities_1.getSingleBufferRowMajorMatrixIndex(this.N, Math.min(i + 1, this.M - 1), Math.max(j - 1, 0))], this.heightField_prev[utilities_1.getSingleBufferRowMajorMatrixIndex(this.N, Math.min(i + 1, this.M - 1), Math.min(j + 1, this.N - 1))], this.heightField_prev[utilities_1.getSingleBufferRowMajorMatrixIndex(this.N, Math.max(i - 1, 0), Math.max(j - 1, 0))], this.heightField_prev[utilities_1.getSingleBufferRowMajorMatrixIndex(this.N, Math.max(i - 1, 0), Math.min(j + 1, this.N - 1))]];
+                        // TODO: Don't give each each neighbor equal weight
+                        this.heightField[index] += elements.reduce(function (total, num) {
+                            return total + num;
+                        }) / 8 - this.heightField_prev[index];
+                        this.heightField[i] *= this.D;
+                    }
                 }
             }
-            var i = this.heightField.length;
-            while (i--) {
-                this.heightField_prev[i] += this.heightField[i];
+            {
+                var _i = this.heightField.length;
+                while (_i--) {
+                    this.heightField_prev[_i] += this.heightField[_i];
+                }
             }
         }
     }, {
         key: "getHeightMap",
         value: function getHeightMap() {
             var heightMap = utilities_1.makeRowOrderMatrix(this.M, this.N);
-            for (var i = 0; i < this.M; i++) {
-                for (var j = 0; j < this.N; j++) {
+            var i = this.M;
+            while (i--) {
+                var j = this.N;
+                while (j--) {
                     heightMap[i][j] = this.heightField[utilities_1.getSingleBufferRowMajorMatrixIndex(this.N, i, j)];
                 }
-            }return heightMap;
+            }
+            return heightMap;
         }
     }, {
         key: "applyImpression",

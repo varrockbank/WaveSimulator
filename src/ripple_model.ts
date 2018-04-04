@@ -15,9 +15,12 @@ export class RippleModel {
   // Dampening value between 0 and 1 inclusive.
   private readonly D = .95
 
-  private indexer: (i, j) => number
+  private readonly indexer: (i, j) => number
 
-  constructor(private readonly M, private readonly N) {
+  constructor(
+    private readonly M,
+    private readonly N,
+  ) {
     this.heightField = (new Array(M * N)).fill(0)
     this.heightField_prev = (new Array(M * N)).fill(0)
     this.indexer = getSingleBufferRowMajorMatrixIndexer(N)

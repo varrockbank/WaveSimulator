@@ -5,18 +5,21 @@ import { SpringModel } from "./spring_model"
  * PropagationSpringModel has points pull on neighbors making wave oscillate laterally.
  */
 export class PropagationSpringModel extends SpringModel {
-  private propagationModelBuffers: {
-    leftDelta: number[],
-    rightDelta: number[],
-    topDelta: number[],
-    bottomDelta: number[],
+  private readonly propagationModelBuffers: {
+    readonly leftDelta: number[],
+    readonly rightDelta: number[],
+    readonly topDelta: number[],
+    readonly bottomDelta: number[],
   }
 
   // Physics parameters.
-  private S = 0.0005 // Wave spread.
-  private BACK_PROPAGATIONS = 4
+  private readonly S = 0.0005 // Wave spread.
+  private readonly BACK_PROPAGATIONS = 4
 
-  constructor(ROWS: number, COLUMNS: number) {
+  constructor(
+    ROWS: number, 
+    COLUMNS: number,
+  ) {
     super(ROWS, COLUMNS)
     this.propagationModelBuffers = {
       leftDelta: new Array(ROWS * COLUMNS),
@@ -29,7 +32,7 @@ export class PropagationSpringModel extends SpringModel {
   public iteratePropagation() {
     const indexer = this.indexer
     const heightField = this.heightField
-    const velocityField = this.velocityField
+    const velocityField = this.velocityField 
 
     let {
       leftDelta,

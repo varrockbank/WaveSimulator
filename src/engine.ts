@@ -8,8 +8,8 @@ const EVENT_KEYS = {
 };
 
 export class Engine {
-  private width = window.innerWidth
-  private height = window.innerHeight
+  private readonly width = window.innerWidth
+  private readonly height = window.innerHeight
 
   private readonly ROW_VERTICES = this.ROWS + 1
   private readonly COLUMN_VERTICES = this.COLUMNS + 1
@@ -19,20 +19,20 @@ export class Engine {
   private readonly CELL_HEIGHT = this.PLANE_HEIGHT / this.ROWS
   private readonly CELL_WIDTH = this.PLANE_WIDTH / this.COLUMNS
 
-  private propagationSpringModel: PropagationSpringModel
-  private rippleModel: RippleModel
+  private readonly propagationSpringModel: PropagationSpringModel
+  private readonly rippleModel: RippleModel
 
   private heightMap: number[]
 
-  private scene: THREE.Scene
-  private camera: THREE.Camera
-  private renderer: THREE.WebGLRenderer
-  private controls: THREE.OrbitControls
-  private raycaster: THREE.Raycaster
+  private readonly scene: THREE.Scene
+  private readonly camera: THREE.Camera
+  private readonly renderer: THREE.WebGLRenderer
+  private readonly controls: THREE.OrbitControls
+  private readonly raycaster: THREE.Raycaster
 
   // For identification of raycaster intersect.
-  private planeUUID: string
-  private geometry: THREE.Geometry
+  private readonly planeUUID: string
+  private readonly geometry: THREE.Geometry
 
   constructor (
     private readonly ROWS,

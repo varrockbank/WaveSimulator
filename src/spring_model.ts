@@ -16,7 +16,10 @@ export class SpringModel {
 
   protected readonly indexer: (i, j) => number
 
-  constructor(protected readonly ROWS, protected readonly COLUMNS) {
+  constructor(
+    protected readonly ROWS,
+    protected readonly COLUMNS,
+  ) {
     this.heightField = (new Array(ROWS * COLUMNS)).fill(0)
     this.velocityField =  (new Array(ROWS * COLUMNS)).fill(0)
     this.indexer = getSingleBufferRowMajorMatrixIndexer(COLUMNS)

@@ -60,7 +60,7 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 0);
+/******/ 	return __webpack_require__(__webpack_require__.s = 1);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -69,17 +69,38 @@
 
 "use strict";
 
+
+Object.defineProperty(exports, "__esModule", { value: true });
+/**
+ * @param rows Number of rows
+ * @param columns number of columns
+ * @return row-order zero matrix
+ */
+function makeRowOrderMatrix(rows, columns) {
+    var matrix = new Array(rows);
+    while (rows--) {
+        matrix[rows] = new Array(columns).fill(0);
+    }return matrix;
+}
+exports.makeRowOrderMatrix = makeRowOrderMatrix;
+
+/***/ }),
+/* 1 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
 /// <reference types='../typings/three' /> 
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var engine_1 = __webpack_require__(1);
+var engine_1 = __webpack_require__(2);
 var init = function init() {
     var engine = new engine_1.Engine();
 };
 window.onload = init;
 
 /***/ }),
-/* 1 */
+/* 2 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -90,8 +111,8 @@ var _createClass = function () { function defineProperties(target, props) { for 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var ripple_model_1 = __webpack_require__(2);
-var propagation_spring_model_1 = __webpack_require__(3);
+var ripple_model_1 = __webpack_require__(3);
+var propagation_spring_model_1 = __webpack_require__(4);
 var EVENT_KEYS = {
     ITERATE: 'x',
     RUN: 'y',
@@ -386,7 +407,7 @@ var Engine = function () {
 exports.Engine = Engine;
 
 /***/ }),
-/* 2 */
+/* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -397,7 +418,7 @@ var _createClass = function () { function defineProperties(target, props) { for 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var utilities_1 = __webpack_require__(5);
+var utilities_1 = __webpack_require__(0);
 /**
  * A heightfield based ripple model which updates points with average of neighbors from previous
  * iteration + delta from previous iteration.
@@ -457,7 +478,7 @@ var RippleModel = function () {
 exports.RippleModel = RippleModel;
 
 /***/ }),
-/* 3 */
+/* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -472,11 +493,11 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var spring_model_1 = __webpack_require__(4);
-var utilities_1 = __webpack_require__(5);
+var spring_model_1 = __webpack_require__(5);
+var utilities_1 = __webpack_require__(0);
 /**
  * SpringModel models each point in the plane as an independent spring without lateral interaction.
- * PropagationSpringModel causes the springs to pull on adjacent neighbors.
+ * PropagationSpringModel has points pull on neighbors making wave oscillate laterally.
  */
 
 var PropagationSpringModel = function (_spring_model_1$Sprin) {
@@ -592,23 +613,23 @@ var PropagationSpringModel = function (_spring_model_1$Sprin) {
 exports.PropagationSpringModel = PropagationSpringModel;
 
 /***/ }),
-/* 4 */
+/* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
-/**
- * Models as water surface as springs along the z-axis.
- *
- * Lower dimensional variant: https://gamedevelopment.tutsplus.com/tutorials/make-a-splash-with-dynamic-2d-water-effects--gamedev-236
- */
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var utilities_1 = __webpack_require__(5);
+var utilities_1 = __webpack_require__(0);
+/**
+ * Models water surface as springs along the z-axis.
+ *
+ * Lower dimensional variant: https://gamedevelopment.tutsplus.com/tutorials/make-a-splash-with-dynamic-2d-water-effects--gamedev-236
+ */
 
 var SpringModel = function () {
     function SpringModel(ROWS, COLUMNS) {
@@ -617,7 +638,7 @@ var SpringModel = function () {
         this.ROWS = ROWS;
         this.COLUMNS = COLUMNS;
         // Physics parameters.
-        this.K = 0.03; // "Hooke's constant"
+        this.K = 0.03; // Hooke's constant
         this.D = 0.025; // Dampening Factor
         this.TERMINAL_VELOCITY = 1.5;
         this.heightMap = utilities_1.makeRowOrderMatrix(ROWS + 1, COLUMNS + 1);
@@ -661,28 +682,6 @@ var SpringModel = function () {
 }();
 
 exports.SpringModel = SpringModel;
-
-/***/ }),
-/* 5 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", { value: true });
-/**
- * Returns a row-order numeric matrix filled initialized with 0s
- * @param rows Number of rows
- * @param columns number of columns
- * @return
- */
-function makeRowOrderMatrix(rows, columns) {
-    var matrix = new Array(rows);
-    while (rows--) {
-        matrix[rows] = new Array(columns).fill(0);
-    }return matrix;
-}
-exports.makeRowOrderMatrix = makeRowOrderMatrix;
 
 /***/ })
 /******/ ]);

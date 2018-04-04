@@ -2,12 +2,6 @@ import { Wave } from "./wave"
 import { RippleModel } from "./ripple_model"
 import { PropagationSpringModel } from "./propagation_spring_model"
 
-interface Point {
-  x: number,
-  y: number,
-  z?: number,
-}
-
 const EVENT_KEYS = {
   ITERATE: 'x',
   RUN: 'y',

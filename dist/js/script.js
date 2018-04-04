@@ -93,6 +93,13 @@ function getSingleBufferRowMajorMatrixIndexer(m) {
     };
 }
 exports.getSingleBufferRowMajorMatrixIndexer = getSingleBufferRowMajorMatrixIndexer;
+/**
+ * @return Random number in [-1, 0, 1]
+ */
+function getRandomDirection() {
+    return Math.floor(3 * Math.random()) - 1;
+}
+exports.getRandomDirection = getRandomDirection;
 
 /***/ }),
 /* 1 */
@@ -270,39 +277,10 @@ var Engine = function () {
                 }
             }
         }
-        /** Return -1, 0, 1 */
-
-    }, {
-        key: "getRandomDirection",
-        value: function getRandomDirection() {
-            return Math.floor(3 * Math.random()) - 1;
-        }
     }, {
         key: "initRandomHeightmap",
         value: function initRandomHeightmap() {
-            var numCols = this.COLUMN_VERTICES;
-            var numRows = this.ROW_VERTICES;
-            // Seed the first cell.
-            this.propagationSpringModel.set(0, 0, Math.floor(5 * Math.random()) * this.getRandomDirection());
-            // Random walk along first row.
-            for (var j = 1; j < numCols; j++) {
-                var neighborHeight = this.propagationSpringModel.get(0, j - 1);
-                this.propagationSpringModel.set(0, j, neighborHeight + this.getRandomDirection());
-            }
-            // Random walk along first column.
-            for (var i = 1; i < numRows; i++) {
-                var _neighborHeight = this.propagationSpringModel.get(i - 1, 0);
-                this.propagationSpringModel.set(i, 0, _neighborHeight + this.getRandomDirection());
-            }
-            // Loop over inner cells, assigning height as +-1 from midpoint of top and left neighbor
-            for (var _i = 1; _i < numRows; _i++) {
-                for (var _j = 1; _j < numCols; _j++) {
-                    var topNeighbor = this.propagationSpringModel.get(_i - 1, _j);
-                    var leftNeighbor = this.propagationSpringModel.get(_i, _j - 1);
-                    var midpoint = (topNeighbor + leftNeighbor) / 2;
-                    this.propagationSpringModel.set(_i, _j, Math.round(midpoint) + this.getRandomDirection());
-                }
-            }
+            this.propagationSpringModel.initRandomHeight();
             this.heightMap = this.propagationSpringModel.getHeightMap();
             this.applyHeightmapToGeometry();
             this.digestGeometry();
@@ -550,24 +528,8 @@ var PropagationSpringModel = function (_spring_model_1$Sprin) {
         };
         return _this;
     }
-    /** Set heightfield. */
-
 
     _createClass(PropagationSpringModel, [{
-        key: "set",
-        value: function set(x, y, z) {
-            var index = this.indexer(x, y);
-            this.heightMap[index] = z;
-        }
-        /** Get heightfield.  */
-
-    }, {
-        key: "get",
-        value: function get(x, y) {
-            var index = this.indexer(x, y);
-            return this.heightMap[index];
-        }
-    }, {
         key: "iteratePropagation",
         value: function iteratePropagation() {
             var indexer = this.indexer;
@@ -730,6 +692,35 @@ var SpringModel = function () {
                 }
             }
             return heightMap;
+        }
+    }, {
+        key: "initRandomHeight",
+        value: function initRandomHeight() {
+            var indexer = this.indexer;
+            var numCols = this.COLUMNS;
+            var numRows = this.ROWS;
+            var heightMap = this.heightMap;
+            // Seed the first cell.
+            heightMap[indexer(0, 0)] = Math.floor(10 * Math.random()) * utilities_1.getRandomDirection();
+            // Random walk along first row.
+            for (var j = 1; j < numCols; j++) {
+                var neighborHeight = heightMap[indexer(0, j - 1)];
+                heightMap[indexer(0, j)] = neighborHeight + utilities_1.getRandomDirection();
+            }
+            // Random walk along first column.
+            for (var i = 1; i < numRows; i++) {
+                var _neighborHeight = heightMap[indexer(i - 1, 0)];
+                heightMap[indexer(i, 0)] = _neighborHeight + utilities_1.getRandomDirection();
+            }
+            // Loop over inner cells, assigning height as +-1 from midpoint of top and left neighbor
+            for (var _i = 1; _i < numRows; _i++) {
+                for (var _j = 1; _j < numCols; _j++) {
+                    var topNeighbor = heightMap[indexer(_i - 1, _j)];
+                    var leftNeighbor = heightMap[indexer(_i, _j - 1)];
+                    var midpoint = (topNeighbor + leftNeighbor) / 2;
+                    heightMap[indexer(_i, _j)] = Math.round(midpoint) + utilities_1.getRandomDirection();
+                }
+            }
         }
     }]);
 

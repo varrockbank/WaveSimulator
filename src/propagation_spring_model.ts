@@ -27,18 +27,6 @@ export class PropagationSpringModel extends SpringModel {
     }
   }
 
-  /** Set heightfield. */
-  set(x, y, z) {
-    const index = this.indexer(x, y)
-    this.heightMap[index] = z
-  }
-
-  /** Get heightfield.  */
-  get(x, y) {
-    const index = this.indexer(x, y)
-    return this.heightMap[index]
-  }
-
   public iteratePropagation() {
     const indexer = this.indexer
     const heightMap = this.heightMap

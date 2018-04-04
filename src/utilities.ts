@@ -17,3 +17,10 @@ export function makeRowOrderMatrix(rows: number, columns): number[][] {
 export function getSingleBufferRowMajorMatrixIndexer(m) {
   return (i, j) => i * m + j
 }
+
+  /**
+   * @return Random number in [-1, 0, 1]
+   */
+  export function getRandomDirection(): number {
+    return Math.floor(3 * Math.random()) - 1
+  }

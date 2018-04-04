@@ -1,4 +1,4 @@
-import { makeRowOrderMatrix, getSingleBufferRowMajorMatrixIndexer } from "./utilities"
+import { makeRowOrderMatrix, getSingleBufferRowMajorMatrixIndexer, getRandomDirection} from "./utilities"
 
 /**
  * Models water surface as springs along the z-axis.
@@ -59,5 +59,33 @@ export class SpringModel {
       while(j--) heightMap[i][j] = this.heightMap[indexer(i, j)]
     }
     return heightMap
+  }
+
+  initRandomHeight() {
+    const indexer = this.indexer
+    const numCols = this.COLUMNS
+    const numRows = this.ROWS
+    const heightMap = this.heightMap
+    // Seed the first cell.
+    heightMap[indexer(0, 0)] = Math.floor(10 * Math.random()) * getRandomDirection()
+    // Random walk along first row.
+    for(let j = 1 ; j < numCols ; j++) {
+      const neighborHeight = heightMap[indexer(0, j-1)]
+      heightMap[indexer(0, j)] = neighborHeight + getRandomDirection()
+    }
+    // Random walk along first column.
+    for(let i = 1 ; i < numRows ; i++) {
+      const neighborHeight = heightMap[indexer(i-1, 0)]
+      heightMap[indexer(i, 0)] = neighborHeight + getRandomDirection()
+    }
+    // Loop over inner cells, assigning height as +-1 from midpoint of top and left neighbor
+    for(let i = 1 ; i < numRows ; i++) {
+      for(let j = 1 ; j < numCols ; j++) {
+        const topNeighbor = heightMap[indexer(i-1, j)]
+        const leftNeighbor = heightMap[indexer(i, j-1)]
+        const midpoint = ( topNeighbor + leftNeighbor ) / 2
+        heightMap[indexer(i, j)] =Math.round(midpoint) + getRandomDirection()
+      }
+    }
   }
 }

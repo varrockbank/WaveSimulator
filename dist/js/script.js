@@ -465,22 +465,25 @@ var PropagationSpringModel = function (_spring_model_1$Sprin) {
                 for (var i = 0; i < this.ROWS; i++) {
                     // Left velocity propagation.
                     for (var j = 1; j < this.COLUMNS; j++) {
-                        leftDelta[indexer(i, j)] = this.roundDecimal(this.S * (heightMap[indexer(i, j)] - heightMap[indexer(i, j - 1)]));
-                        velocityMap[indexer(i, j)] += leftDelta[indexer(i, j)];
-                        if (velocityMap[indexer(i, j)] < 0) {
-                            velocityMap[indexer(i, j)] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[indexer(i, j)]));
-                        } else if (velocityMap[indexer(i, j)] > 0) {
-                            velocityMap[indexer(i, j)] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[indexer(i, j)]));
+                        var index = indexer(i, j);
+                        leftDelta[index] = this.roundDecimal(this.S * (heightMap[index] - heightMap[indexer(i, j - 1)]));
+                        velocityMap[index] += leftDelta[index];
+                        // Clamp to 0.
+                        if (velocityMap[index] < 0) {
+                            velocityMap[index] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[index]));
+                        } else if (velocityMap[index] > 0) {
+                            velocityMap[index] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[index]));
                         }
                     }
                     // Right velocity propagation.
                     for (var _j = 0; _j < this.COLUMNS - 1; _j++) {
-                        rightDelta[indexer(i, _j)] = this.roundDecimal(this.S * (heightMap[indexer(i, _j)] - heightMap[indexer(i, _j + 1)]));
-                        velocityMap[indexer(i, _j)] += rightDelta[indexer(i, _j)];
-                        if (velocityMap[indexer(i, _j)] < 0) {
-                            velocityMap[indexer(i, _j)] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[indexer(i, _j)]));
-                        } else if (velocityMap[indexer(i, _j)] > 0) {
-                            velocityMap[indexer(i, _j)] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[indexer(i, _j)]));
+                        var _index = indexer(i, _j);
+                        rightDelta[_index] = this.roundDecimal(this.S * (heightMap[_index] - heightMap[indexer(i, _j + 1)]));
+                        velocityMap[_index] += rightDelta[_index];
+                        if (velocityMap[_index] < 0) {
+                            velocityMap[_index] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[_index]));
+                        } else if (velocityMap[_index] > 0) {
+                            velocityMap[_index] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[_index]));
                         }
                     }
                     // Left height propagation
@@ -496,21 +499,23 @@ var PropagationSpringModel = function (_spring_model_1$Sprin) {
                 // Vertical propagation.
                 for (var _j4 = 0; _j4 < this.COLUMNS; _j4++) {
                     for (var _i = 1; _i < this.ROWS; _i++) {
-                        topDelta[indexer(_i, _j4)] = this.roundDecimal(this.S * (heightMap[indexer(_i, _j4)] - heightMap[indexer(_i - 1, _j4)]));
-                        velocityMap[indexer(_i, _j4)] += topDelta[indexer(_i, _j4)];
-                        if (velocityMap[indexer(_i, _j4)] < 0) {
-                            velocityMap[indexer(_i, _j4)] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[indexer(_i, _j4)]));
-                        } else if (velocityMap[indexer(_i, _j4)] > 0) {
-                            velocityMap[indexer(_i, _j4)] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[indexer(_i, _j4)]));
+                        var _index2 = indexer(_i, _j4);
+                        topDelta[_index2] = this.roundDecimal(this.S * (heightMap[_index2] - heightMap[indexer(_i - 1, _j4)]));
+                        velocityMap[_index2] += topDelta[_index2];
+                        if (velocityMap[_index2] < 0) {
+                            velocityMap[_index2] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[_index2]));
+                        } else if (velocityMap[_index2] > 0) {
+                            velocityMap[_index2] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[_index2]));
                         }
                     }
                     for (var _i2 = 0; _i2 < this.ROWS - 1; _i2++) {
-                        bottomDelta[indexer(_i2, _j4)] = this.S * (heightMap[indexer(_i2, _j4)] - heightMap[indexer(_i2 + 1, _j4)]);
-                        velocityMap[indexer(_i2, _j4)] += bottomDelta[indexer(_i2, _j4)];
-                        if (velocityMap[indexer(_i2, _j4)] < 0) {
-                            velocityMap[indexer(_i2, _j4)] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[indexer(_i2, _j4)]));
-                        } else if (velocityMap[indexer(_i2, _j4)] > 0) {
-                            velocityMap[indexer(_i2, _j4)] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[indexer(_i2, _j4)]));
+                        var _index3 = indexer(_i2, _j4);
+                        bottomDelta[_index3] = this.S * (heightMap[_index3] - heightMap[indexer(_i2 + 1, _j4)]);
+                        velocityMap[_index3] += bottomDelta[_index3];
+                        if (velocityMap[_index3] < 0) {
+                            velocityMap[_index3] = Math.max(-1 * this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[_index3]));
+                        } else if (velocityMap[_index3] > 0) {
+                            velocityMap[_index3] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityMap[_index3]));
                         }
                     }
                     for (var _i3 = 1; _i3 < this.ROWS; _i3++) {

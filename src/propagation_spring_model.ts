@@ -1,5 +1,10 @@
-import { SpringModel } from "./spring_model";
+import { SpringModel } from "./spring_model"
+import { makeRowOrderMatrix } from "./utilities"
 
+/**
+ * SpringModel models each point in the plane as an independent spring without lateral interaction.
+ * PropagationSpringModel has points pull on neighbors making wave oscillate laterally.
+ */
 export class PropagationSpringModel extends SpringModel {
 
   private propagationModelBuffers: {
@@ -15,23 +20,11 @@ export class PropagationSpringModel extends SpringModel {
 
   constructor(ROWS: number, COLUMNS: number) {
     super(ROWS, COLUMNS)
-    const leftDelta = new Array(this.ROWS + 1);
-    const rightDelta = new Array(this.ROWS + 1);
-    for(let i = 0 ; i < this.ROWS + 1; i++) {
-      leftDelta[i] = (new Array(this.COLUMNS + 1)).fill(0)
-      rightDelta[i] = (new Array(this.COLUMNS + 1)).fill(0)
-    }
-    const topDelta = new Array(this.COLUMNS + 1);
-    const bottomDelta = new Array(this.COLUMNS + 1);
-    for(let i = 0 ; i < this.COLUMNS + 1; i++) {
-      topDelta[i] = (new Array(this.ROWS + 1)).fill(0)
-      bottomDelta[i] = (new Array(this.ROWS + 1)).fill(0)
-    }
     this.propagationModelBuffers = {
-      leftDelta,
-      rightDelta,
-      topDelta,
-      bottomDelta
+      leftDelta: makeRowOrderMatrix(ROWS + 1, COLUMNS + 1),
+      rightDelta: makeRowOrderMatrix(ROWS + 1, COLUMNS + 1),
+      topDelta: makeRowOrderMatrix(ROWS + 1, COLUMNS + 1),
+      bottomDelta: makeRowOrderMatrix(ROWS + 1, COLUMNS + 1),
     }
   }
 

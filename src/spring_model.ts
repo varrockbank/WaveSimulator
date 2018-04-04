@@ -1,29 +1,22 @@
+import { makeRowOrderMatrix } from "./utilities"
+
 /**
- * Models as water surface as springs along the z-axis.
+ * Models water surface as springs along the z-axis.
  *
  * Lower dimensional variant: https://gamedevelopment.tutsplus.com/tutorials/make-a-splash-with-dynamic-2d-water-effects--gamedev-236
  */
-
 export class SpringModel {
   public heightMap: number[][]
   public velocityMap: number[][]
 
   // Physics parameters.
-  protected readonly K = 0.03 // "Hooke's constant"
+  protected readonly K = 0.03 // Hooke's constant
   protected readonly D = 0.025 // Dampening Factor
   protected readonly TERMINAL_VELOCITY = 1.5
 
   constructor(protected readonly ROWS, protected readonly COLUMNS) {
-    let numRows = this.ROWS + 1
-    const numCols = this.COLUMNS + 1
-    const heightMap = new Array(numRows);
-    const velocityMap = new Array(numRows);
-    while(numRows--) {
-        heightMap[numRows] = (new Array(numCols)).fill(0)
-        velocityMap[numRows] = (new Array(numCols)).fill(0)
-    }
-    this.heightMap = heightMap
-    this.velocityMap = velocityMap
+    this.heightMap = makeRowOrderMatrix(ROWS + 1, COLUMNS + 1)
+    this.velocityMap = makeRowOrderMatrix(ROWS + 1, COLUMNS + 1)
   }
 
   iterate() {

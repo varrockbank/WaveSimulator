@@ -1,24 +1,18 @@
+import { makeRowOrderMatrix } from "./utilities"
+
 /**
  * A heightfield based ripple model which updates points with average of neighbors from previous
  * iteration + delta from previous iteration.
  * 
  * Reference: http://matthias-mueller-fischer.ch/talks/GDC2008.pdf
  */
-
 export class RippleModel {
   private rippleHeightMap: number[][]
   private rippleHeightMap_prev: number[][]
     
   constructor(private readonly ROWS, private readonly COLUMNS) {
-    let numRows = ROWS +1
-    const rippleHeightMap = new Array(ROWS)
-    const rippleHeightMap_prev = new Array(ROWS)
-    while(numRows--) {
-      rippleHeightMap[numRows] = (new Array(COLUMNS + 1)).fill(0)
-      rippleHeightMap_prev[numRows] = (new Array(COLUMNS + 1)).fill(0)
-    }
-    this.rippleHeightMap = rippleHeightMap
-    this.rippleHeightMap_prev = rippleHeightMap_prev
+    this.rippleHeightMap = makeRowOrderMatrix(ROWS + 1, COLUMNS + 1)
+    this.rippleHeightMap_prev = makeRowOrderMatrix(ROWS + 1, COLUMNS + 1)
   }
 
   iterate() {

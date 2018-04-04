@@ -123,6 +123,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 Object.defineProperty(exports, "__esModule", { value: true });
 var ripple_model_1 = __webpack_require__(3);
 var propagation_spring_model_1 = __webpack_require__(4);
+var utilities_1 = __webpack_require__(0);
 var EVENT_KEYS = {
     ITERATE: 'x',
     RUN: 'y',
@@ -178,6 +179,7 @@ var Engine = function () {
         this.animate();
         this.addEventListeners();
         this.propagationSpringModel = new propagation_spring_model_1.PropagationSpringModel(this.ROWS + 1, this.COLUMNS + 1);
+        this.heightMap = utilities_1.makeRowOrderMatrix(this.ROWS, this.COLUMNS);
         this.initRandomHeightmap();
         this.rippleModel = new ripple_model_1.RippleModel(this.ROWS + 1, this.COLUMNS + 1);
         this.renderer.gammaInput = true;
@@ -215,11 +217,10 @@ var Engine = function () {
             // TODO: run this at half time step
             this.rippleModel.iterate();
             var rippleHeightMap = this.rippleModel.getHeightMap();
+            this.heightMap = this.propagationSpringModel.getHeightMap();
             for (var i = 0; i < this.ROW_VERTICES; i++) {
                 for (var j = 0; j < this.COLUMN_VERTICES; j++) {
-                    // TODO: maybe don't merge. keep a separate springModel heightmap and a ripplemodel heightmap
-                    // and render the matrix addition
-                    this.propagationSpringModel.heightMap[i][j] += rippleHeightMap[i][j];
+                    this.heightMap[i][j] += rippleHeightMap[i][j];
                 }
             }
             this.applyHeightmapToGeometry();
@@ -229,13 +230,13 @@ var Engine = function () {
     }, {
         key: "applyHeightmapToGeometry",
         value: function applyHeightmapToGeometry() {
-            var heightMap = this.propagationSpringModel.heightMap;
+            var heightMap = this.heightMap;
             var rowNum = heightMap.length;
             while (rowNum--) {
                 var row = heightMap[rowNum];
                 var colNum = row.length;
                 while (colNum--) {
-                    var height = this.propagationSpringModel.heightMap[rowNum][colNum];
+                    var height = this.heightMap[rowNum][colNum];
                     var verticeIndex = this.getVerticeIndex(rowNum, colNum);
                     this.updateVertex(verticeIndex, height);
                 }
@@ -307,6 +308,7 @@ var Engine = function () {
                     heightMap[_i][_j] = Math.round(midpoint) + this.getRandomDirection();
                 }
             }
+            this.heightMap = this.propagationSpringModel.getHeightMap();
             this.applyHeightmapToGeometry();
             this.digestGeometry();
         }
@@ -529,7 +531,6 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 
 Object.defineProperty(exports, "__esModule", { value: true });
 var spring_model_1 = __webpack_require__(5);
-var utilities_1 = __webpack_require__(0);
 /**
  * SpringModel models each point in the plane as an independent spring without lateral interaction.
  * PropagationSpringModel has points pull on neighbors making wave oscillate laterally.
@@ -552,7 +553,6 @@ var PropagationSpringModel = function (_spring_model_1$Sprin) {
             topDelta: new Array(ROWS * COLUMNS),
             bottomDelta: new Array(ROWS * COLUMNS)
         };
-        _this.indexer = utilities_1.getSingleBufferRowMajorMatrixIndexer(COLUMNS);
         return _this;
     }
 
@@ -676,6 +676,7 @@ var SpringModel = function () {
         this.TERMINAL_VELOCITY = 1.5;
         this.heightMap = utilities_1.makeRowOrderMatrix(ROWS, COLUMNS);
         this.velocityMap = utilities_1.makeRowOrderMatrix(ROWS, COLUMNS);
+        this.indexer = utilities_1.getSingleBufferRowMajorMatrixIndexer(COLUMNS);
     }
 
     _createClass(SpringModel, [{
@@ -708,6 +709,20 @@ var SpringModel = function () {
         key: "roundDecimal",
         value: function roundDecimal(num) {
             return Math.round(num * 10000) / 10000;
+        }
+    }, {
+        key: "getHeightMap",
+        value: function getHeightMap() {
+            var heightMap = utilities_1.makeRowOrderMatrix(this.ROWS, this.COLUMNS);
+            var indexer = this.indexer;
+            var i = this.ROWS;
+            while (i--) {
+                var j = this.COLUMNS;
+                while (j--) {
+                    heightMap[i][j] = this.heightMap[i][j];
+                }
+            }
+            return heightMap;
         }
     }]);
 

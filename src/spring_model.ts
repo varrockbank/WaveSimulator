@@ -1,4 +1,4 @@
-import { makeRowOrderMatrix } from "./utilities"
+import { makeRowOrderMatrix, getSingleBufferRowMajorMatrixIndexer } from "./utilities"
 
 /**
  * Models water surface as springs along the z-axis.
@@ -14,9 +14,12 @@ export class SpringModel {
   protected readonly D = 0.025 // Dampening Factor
   protected readonly TERMINAL_VELOCITY = 1.5
 
+  protected indexer: (i, j) => number
+
   constructor(protected readonly ROWS, protected readonly COLUMNS) {
     this.heightMap = makeRowOrderMatrix(ROWS, COLUMNS)
     this.velocityMap = makeRowOrderMatrix(ROWS, COLUMNS)
+    this.indexer = getSingleBufferRowMajorMatrixIndexer(COLUMNS)
   }
 
   iterate() {
@@ -47,5 +50,16 @@ export class SpringModel {
   // TODO: refactor into utility
   protected roundDecimal(num) {
     return Math.round(num * 10000) / 10000
+  }
+
+  getHeightMap() {
+    const heightMap = makeRowOrderMatrix(this.ROWS, this.COLUMNS)
+    const indexer = this.indexer
+    let i = this.ROWS
+    while(i--) {
+      let j = this.COLUMNS
+      while(j--) heightMap[i][j] = this.heightMap[i][j]
+    }
+    return heightMap
   }
 }

@@ -1,6 +1,7 @@
 import { Wave } from "./wave"
 import { RippleModel } from "./ripple_model"
 import { PropagationSpringModel } from "./propagation_spring_model"
+import { makeRowOrderMatrix } from "./utilities"
 
 const EVENT_KEYS = {
   ITERATE: 'x',
@@ -24,6 +25,7 @@ export class Engine {
 
   private propagationSpringModel: PropagationSpringModel
   private rippleModel: RippleModel
+  private heightMap: number[][]
 
   private scene: THREE.Scene
   private camera: THREE.Camera
@@ -79,6 +81,7 @@ export class Engine {
     this.addEventListeners()
 
     this.propagationSpringModel = new PropagationSpringModel(this.ROWS + 1 , this.COLUMNS + 1)
+    this.heightMap = makeRowOrderMatrix(this.ROWS, this.COLUMNS)
     this.initRandomHeightmap()
     this.rippleModel = new RippleModel(this.ROWS + 1, this.COLUMNS + 1)
 
@@ -120,11 +123,10 @@ export class Engine {
     // TODO: run this at half time step
     this.rippleModel.iterate()
     const rippleHeightMap = this.rippleModel.getHeightMap();
+    this.heightMap = this.propagationSpringModel.getHeightMap()
     for(let i = 0; i < this.ROW_VERTICES ; i++) {
       for(let j = 0 ; j < this.COLUMN_VERTICES ; j++) {
-        // TODO: maybe don't merge. keep a separate springModel heightmap and a ripplemodel heightmap
-        // and render the matrix addition
-        this.propagationSpringModel.heightMap[i][j] += rippleHeightMap[i][j]
+        this.heightMap[i][j] += rippleHeightMap[i][j]
       }
     }
 
@@ -135,13 +137,13 @@ export class Engine {
   }
 
   private applyHeightmapToGeometry() {
-    const heightMap = this.propagationSpringModel.heightMap
+    const heightMap = this.heightMap
     let rowNum = heightMap.length
     while(rowNum--) {
       const row = heightMap[rowNum]
       let colNum = row.length
       while(colNum--) {
-        const height = this.propagationSpringModel.heightMap[rowNum][colNum]
+        const height = this.heightMap[rowNum][colNum]
         const verticeIndex = this.getVerticeIndex(rowNum, colNum)
         this.updateVertex(verticeIndex, height)
       }
@@ -205,6 +207,7 @@ export class Engine {
         heightMap[i][j] = Math.round(midpoint) + this.getRandomDirection()
       }
     }
+    this.heightMap = this.propagationSpringModel.getHeightMap()
     this.applyHeightmapToGeometry()
     this.digestGeometry()
   }

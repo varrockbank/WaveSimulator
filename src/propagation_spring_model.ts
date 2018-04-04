@@ -1,5 +1,4 @@
 import { SpringModel } from "./spring_model"
-import { makeRowOrderMatrix , getSingleBufferRowMajorMatrixIndexer } from "./utilities"
 
 /**
  * SpringModel models each point in the plane as an independent spring without lateral interaction.
@@ -18,8 +17,6 @@ export class PropagationSpringModel extends SpringModel {
   private S = 0.0005 // Wave spread.
   private BACK_PROPAGATIONS = 4
 
-  private indexer: (i, j) => number
-
   constructor(ROWS: number, COLUMNS: number) {
     super(ROWS, COLUMNS)
     this.propagationModelBuffers = {
@@ -28,7 +25,6 @@ export class PropagationSpringModel extends SpringModel {
       topDelta: new Array(ROWS * COLUMNS),
       bottomDelta: new Array(ROWS * COLUMNS)
     }
-    this.indexer = getSingleBufferRowMajorMatrixIndexer(COLUMNS)
   }
 
   public iteratePropagation() {

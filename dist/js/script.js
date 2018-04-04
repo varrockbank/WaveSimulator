@@ -211,7 +211,7 @@ var Engine = function () {
             // TODO: Add floating point rounding method
             // TODO: run this at half time step
             this.rippleModel.iterate();
-            var rippleHeightBuffer = this.rippleModel.getHeightBuffer();
+            var rippleHeightBuffer = this.rippleModel.heightField;
             this.heightMap = this.propagationSpringModel.getHeightBuffer();
             var i = this.heightMap.length;
             while (i--) {
@@ -383,19 +383,6 @@ var RippleModel = function () {
                     this.heightField_prev[_i] += this.heightField[_i];
                 }
             }
-        }
-        /**
-         * @return copy of height buffer
-         */
-
-    }, {
-        key: "getHeightBuffer",
-        value: function getHeightBuffer() {
-            var i = this.heightField.length;
-            var heightBuffer = new Array(i);
-            while (i--) {
-                heightBuffer[i] = this.heightField[i];
-            }return heightBuffer;
         }
     }, {
         key: "applyImpression",

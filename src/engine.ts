@@ -120,7 +120,7 @@ export class Engine {
 
     // TODO: run this at half time step
     this.rippleModel.iterate()
-    const rippleHeightBuffer = this.rippleModel.getHeightBuffer();
+    const rippleHeightBuffer = this.rippleModel.heightField
     this.heightMap = this.propagationSpringModel.getHeightBuffer()
     let i = this.heightMap.length
     while(i--)

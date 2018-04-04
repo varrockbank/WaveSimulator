@@ -8,7 +8,7 @@ import { getSingleBufferRowMajorMatrixIndexer} from "./utilities"
  */
 export class RippleModel {
   // Row-major 1-d represenration of 2-d matrix.
-  private readonly heightField: number[]
+  public readonly heightField: number[]
   private readonly heightField_prev: number[]
 
   // Physics constants:
@@ -52,17 +52,6 @@ export class RippleModel {
       let i = this.heightField.length
       while(i--) this.heightField_prev[i] += this.heightField[i]
     }
-  }
-
-  /**
-   * @return copy of height buffer
-   */
-  getHeightBuffer() {
-    let i = this.heightField.length
-    const heightBuffer = (new Array(i))
-    while(i--)
-      heightBuffer[i] = this.heightField[i]
-    return heightBuffer
   }
 
   public applyImpression(rowIndex, columnIndex) {

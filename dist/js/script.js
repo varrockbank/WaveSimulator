@@ -462,9 +462,9 @@ var PropagationSpringModel = function (_spring_model_1$Sprin) {
             bottomDelta = bottomDelta.fill(0);
             for (var l = 0; l < this.BACK_PROPAGATIONS; l++) {
                 // Horizontal propagation
-                for (var i = 0; i < this.ROWS; i++) {
+                for (var i = 0; i < this.N; i++) {
                     // Left velocity propagation.
-                    for (var j = 1; j < this.COLUMNS; j++) {
+                    for (var j = 1; j < this.M; j++) {
                         var index = indexer(i, j);
                         leftDelta[index] = this.roundDecimal(this.S * (heightField[index] - heightField[indexer(i, j - 1)]));
                         velocityField[index] += leftDelta[index];
@@ -476,7 +476,7 @@ var PropagationSpringModel = function (_spring_model_1$Sprin) {
                         }
                     }
                     // Right velocity propagation.
-                    for (var _j = 0; _j < this.COLUMNS - 1; _j++) {
+                    for (var _j = 0; _j < this.M - 1; _j++) {
                         var _index = indexer(i, _j);
                         rightDelta[_index] = this.roundDecimal(this.S * (heightField[_index] - heightField[indexer(i, _j + 1)]));
                         velocityField[_index] += rightDelta[_index];
@@ -487,18 +487,18 @@ var PropagationSpringModel = function (_spring_model_1$Sprin) {
                         }
                     }
                     // Left height propagation
-                    for (var _j2 = 1; _j2 < this.COLUMNS - 1; _j2++) {
+                    for (var _j2 = 1; _j2 < this.M - 1; _j2++) {
                         heightField[indexer(i, _j2 - 1)] += leftDelta[indexer(i, _j2)];
                     }
                     // Right height propagation
-                    for (var _j3 = 0; _j3 < this.COLUMNS - 1; _j3++) {
+                    for (var _j3 = 0; _j3 < this.M - 1; _j3++) {
                         heightField[indexer(i, _j3 + 1)] += rightDelta[indexer(i, _j3)];
                     }
                 }
                 // End Horizontal propagation.
                 // Vertical propagation.
-                for (var _j4 = 0; _j4 < this.COLUMNS; _j4++) {
-                    for (var _i = 1; _i < this.ROWS; _i++) {
+                for (var _j4 = 0; _j4 < this.M; _j4++) {
+                    for (var _i = 1; _i < this.N; _i++) {
                         var _index2 = indexer(_i, _j4);
                         topDelta[_index2] = this.roundDecimal(this.S * (heightField[_index2] - heightField[indexer(_i - 1, _j4)]));
                         velocityField[_index2] += topDelta[_index2];
@@ -508,7 +508,7 @@ var PropagationSpringModel = function (_spring_model_1$Sprin) {
                             velocityField[_index2] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityField[_index2]));
                         }
                     }
-                    for (var _i2 = 0; _i2 < this.ROWS - 1; _i2++) {
+                    for (var _i2 = 0; _i2 < this.N - 1; _i2++) {
                         var _index3 = indexer(_i2, _j4);
                         bottomDelta[_index3] = this.S * (heightField[_index3] - heightField[indexer(_i2 + 1, _j4)]);
                         velocityField[_index3] += bottomDelta[_index3];
@@ -518,10 +518,10 @@ var PropagationSpringModel = function (_spring_model_1$Sprin) {
                             velocityField[_index3] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityField[_index3]));
                         }
                     }
-                    for (var _i3 = 1; _i3 < this.ROWS; _i3++) {
+                    for (var _i3 = 1; _i3 < this.N; _i3++) {
                         heightField[indexer(_i3 - 1, _j4)] += topDelta[indexer(_i3, _j4)];
                     }
-                    for (var _i4 = 0; _i4 < this.ROWS - 1; _i4++) {
+                    for (var _i4 = 0; _i4 < this.N - 1; _i4++) {
                         heightField[indexer(_i4 + 1, _j4)] += bottomDelta[indexer(_i4, _j4)];
                     }
                 }
@@ -555,18 +555,18 @@ var utilities_1 = __webpack_require__(0);
  */
 
 var SpringModel = function () {
-    function SpringModel(ROWS, COLUMNS) {
+    function SpringModel(N, M) {
         _classCallCheck(this, SpringModel);
 
-        this.ROWS = ROWS;
-        this.COLUMNS = COLUMNS;
+        this.N = N;
+        this.M = M;
         // Physics parameters.
         this.K = 0.03; // Hooke's constant
         this.D = 0.025; // Dampening Factor
         this.TERMINAL_VELOCITY = 1.5;
-        this.heightField = new Array(ROWS * COLUMNS).fill(0);
-        this.velocityField = new Array(ROWS * COLUMNS).fill(0);
-        this.indexer = utilities_1.getSingleBufferRowMajorMatrixIndexer(COLUMNS);
+        this.heightField = new Array(N * M).fill(0);
+        this.velocityField = new Array(N * M).fill(0);
+        this.indexer = utilities_1.getSingleBufferRowMajorMatrixIndexer(M);
     }
 
     _createClass(SpringModel, [{
@@ -575,9 +575,9 @@ var SpringModel = function () {
             var indexer = this.indexer;
             var heightField = this.heightField;
             var velocityField = this.velocityField;
-            var rowNum = this.ROWS;
+            var rowNum = this.N;
             while (rowNum--) {
-                var colNum = this.COLUMNS;
+                var colNum = this.M;
                 while (colNum--) {
                     var index = indexer(rowNum, colNum);
                     var velocity = velocityField[index];
@@ -615,24 +615,24 @@ var SpringModel = function () {
         key: "initRandomHeight",
         value: function initRandomHeight() {
             var indexer = this.indexer;
-            var numCols = this.COLUMNS;
-            var numRows = this.ROWS;
+            var m = this.M;
+            var n = this.N;
             var heightField = this.heightField;
             // Seed the first cell.
             heightField[indexer(0, 0)] = Math.floor(10 * Math.random()) * utilities_1.getRandomDirection();
             // Random walk along first row.
-            for (var j = 1; j < numCols; j++) {
+            for (var j = 1; j < m; j++) {
                 var neighborHeight = heightField[indexer(0, j - 1)];
                 heightField[indexer(0, j)] = neighborHeight + utilities_1.getRandomDirection();
             }
             // Random walk along first column.
-            for (var i = 1; i < numRows; i++) {
+            for (var i = 1; i < n; i++) {
                 var _neighborHeight = heightField[indexer(i - 1, 0)];
                 heightField[indexer(i, 0)] = _neighborHeight + utilities_1.getRandomDirection();
             }
             // Loop over inner cells, assigning height as +-1 from midpoint of top and left neighbor
-            for (var _i = 1; _i < numRows; _i++) {
-                for (var _j = 1; _j < numCols; _j++) {
+            for (var _i = 1; _i < n; _i++) {
+                for (var _j = 1; _j < m; _j++) {
                     var topNeighbor = heightField[indexer(_i - 1, _j)];
                     var leftNeighbor = heightField[indexer(_i, _j - 1)];
                     var midpoint = (topNeighbor + leftNeighbor) / 2;

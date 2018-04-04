@@ -48,9 +48,9 @@ export class PropagationSpringModel extends SpringModel {
 
     for(let l = 0 ; l < this.BACK_PROPAGATIONS; l++) {
       // Horizontal propagation
-      for(let i = 0 ; i < this.ROWS; i++) {
+      for(let i = 0 ; i < this.N; i++) {
         // Left velocity propagation.
-        for(let j = 1; j < this.COLUMNS; j++) {
+        for(let j = 1; j < this.M; j++) {
           const index = indexer(i, j)
           leftDelta[index] = this.roundDecimal(this.S * (heightField[index] - heightField[indexer(i, j-1)]))
           velocityField[index] += leftDelta[index]
@@ -62,7 +62,7 @@ export class PropagationSpringModel extends SpringModel {
           }
         }
         // Right velocity propagation.
-        for(let j = 0; j < this.COLUMNS - 1; j++) {
+        for(let j = 0; j < this.M - 1; j++) {
           const index = indexer(i, j)
           rightDelta[index] = this.roundDecimal(this.S * (heightField[index] - heightField[indexer(i, j+1)]))
           velocityField[index] += rightDelta[index]
@@ -73,18 +73,18 @@ export class PropagationSpringModel extends SpringModel {
           }
         }
         // Left height propagation
-        for(let j = 1; j < this.COLUMNS-1; j++) {
+        for(let j = 1; j < this.M-1; j++) {
           heightField[indexer(i, j-1)] += leftDelta[indexer(i, j)]
         }
         // Right height propagation
-        for(let j = 0; j < this.COLUMNS - 1; j++) {
+        for(let j = 0; j < this.M - 1; j++) {
           heightField[indexer(i, j+1)] += rightDelta[indexer(i, j)]
         }
       }
       // End Horizontal propagation.
       // Vertical propagation.
-      for(let j = 0 ; j < this.COLUMNS; j++) {
-        for(let i = 1; i < this.ROWS ; i++) {
+      for(let j = 0 ; j < this.M; j++) {
+        for(let i = 1; i < this.N ; i++) {
           const index = indexer(i, j)
           topDelta[index] = this.roundDecimal(this.S * ( heightField[index] - heightField[indexer(i-1, j)] ))
           velocityField[index] += topDelta[index]
@@ -94,7 +94,7 @@ export class PropagationSpringModel extends SpringModel {
             velocityField[index] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityField[index]))
           }
         }
-        for(let i = 0; i < this.ROWS - 1; i++) {
+        for(let i = 0; i < this.N - 1; i++) {
           const index = indexer(i, j)
           bottomDelta[index] = this.S * ( heightField[index] - heightField[indexer(i+1, j)] )
           velocityField[index] += bottomDelta[index]
@@ -104,10 +104,10 @@ export class PropagationSpringModel extends SpringModel {
             velocityField[index] = Math.min(this.TERMINAL_VELOCITY, this.roundDecimal(velocityField[index]))
           }
         }
-        for(let i = 1; i < this.ROWS; i++) {
+        for(let i = 1; i < this.N; i++) {
           heightField[indexer(i-1, j)] += topDelta[indexer(i, j)]
         }
-        for(let i = 0; i < this.ROWS - 1; i++) {
+        for(let i = 0; i < this.N - 1; i++) {
           heightField[indexer(i+1, j)] += bottomDelta[indexer(i, j)]
         }
       }

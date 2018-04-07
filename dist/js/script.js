@@ -304,10 +304,8 @@ var Engine = function () {
                 }
             });
             document.getElementById(BUTTON_IDS.SPLASH).addEventListener('click', function (e) {
-                var rowIndex = Math.floor(_this2.ROWS * Math.random());
-                var columnIndex = Math.floor(_this2.ROWS * Math.random());
-                _this2.rippleModel.applyImpression(rowIndex, columnIndex);
                 if (_this2.walkthroughState == WalkthroughState.Initial) {
+                    _this2.rippleModel.applyImpression(_this2.ROWS / 2, _this2.COLUMNS / 2);
                     _this2.play();
                     document.getElementById(BUTTON_IDS.SPLASH).classList.remove('bounce');
                     setTimeout(function () {
@@ -316,6 +314,10 @@ var Engine = function () {
                         document.getElementById(BUTTON_IDS.RANDOM).classList.add('bounce');
                         _this2.walkthroughState = WalkthroughState.Halfway;
                     }, 2000);
+                } else {
+                    var rowIndex = Math.floor(_this2.ROWS * Math.random());
+                    var columnIndex = Math.floor(_this2.ROWS * Math.random());
+                    _this2.rippleModel.applyImpression(rowIndex, columnIndex);
                 }
             });
             document.getElementById(BUTTON_IDS.START).addEventListener('click', function (e) {

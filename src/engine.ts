@@ -201,10 +201,8 @@ export class Engine {
       }
     });
     document.getElementById(BUTTON_IDS.SPLASH).addEventListener('click', (e) => {
-      const rowIndex = Math.floor(this.ROWS * Math.random())
-      const columnIndex = Math.floor(this.ROWS * Math.random())
-      this.rippleModel.applyImpression(rowIndex, columnIndex)
       if(this.walkthroughState == WalkthroughState.Initial) {
+        this.rippleModel.applyImpression(this.ROWS / 2, this.COLUMNS / 2)
         this.play()
         document.getElementById(BUTTON_IDS.SPLASH).classList.remove('bounce')
         setTimeout(() => {
@@ -213,6 +211,10 @@ export class Engine {
           document.getElementById(BUTTON_IDS.RANDOM).classList.add('bounce')
           this.walkthroughState = WalkthroughState.Halfway
         }, 2000)
+      } else {
+        const rowIndex = Math.floor(this.ROWS * Math.random())
+        const columnIndex = Math.floor(this.ROWS * Math.random())
+        this.rippleModel.applyImpression(rowIndex, columnIndex)
       }
     });
     document.getElementById(BUTTON_IDS.START).addEventListener('click', (e) => {

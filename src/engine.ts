@@ -74,6 +74,7 @@ export class Engine {
     if(this.isMobile) {
       this.renderer.setSize(this.width , this.height * 3 / 4)
       document.getElementById('controls').classList.add('mobile')
+      document.getElementById('container').classList.add('mobile')
     } else {
       this.renderer.setSize(this.width * 3 / 4 , this.height * 3 / 4)
     }

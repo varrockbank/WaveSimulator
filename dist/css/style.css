@@ -31,7 +31,9 @@ button.remove {
   margin: 20px;
   text-align: center
 }
-
+.mobile#container {
+  margin: 0px;
+}
 
 @-webkit-keyframes stripe-slide {
   0% {
@@ -67,7 +69,6 @@ button.remove {
   color: #666;
   border: 2px solid #666;
   border-radius: 6px;
-  margin-bottom: 16px;
   transition: all .5s ease;
 }
 .btn::-moz-focus-inner {

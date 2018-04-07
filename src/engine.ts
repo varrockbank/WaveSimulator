@@ -15,6 +15,12 @@ const BUTTON_IDS = {
   RANDOM: 'random',
 };
 
+enum WalkthroughState {
+  Initial,
+  Halfway,
+  Complete
+}
+
 export class Engine {
   private readonly width = window.innerWidth
   private readonly height = window.innerHeight
@@ -43,6 +49,8 @@ export class Engine {
   private readonly geometry: THREE.Geometry
 
   private interval
+
+  private walkthroughState: WalkthroughState = WalkthroughState.Initial
 
   constructor (
     private readonly ROWS,
@@ -95,7 +103,6 @@ export class Engine {
 
     this.propagationSpringModel = new PropagationSpringModel(this.ROWS + 1 , this.COLUMNS + 1)
     this.heightMap = (new Array(this.ROW_VERTICES * this.COLUMN_VERTICES)).fill(0)
-    this.initRandomHeightmap()
     this.rippleModel = new RippleModel(this.ROWS + 1, this.COLUMNS + 1)
 
     this.renderer.gammaInput = true
@@ -169,17 +176,28 @@ export class Engine {
     window.addEventListener('keyup', (e) => { this.handleKeyUp(e) } , false );
     document.getElementById(BUTTON_IDS.RANDOM).addEventListener('click', (e) => {
       this.initRandomHeightmap()
+      if(this.walkthroughState ==  WalkthroughState.Halfway) {
+        document.getElementById(BUTTON_IDS.START).classList.remove('hidden')
+      }
     });
     document.getElementById(BUTTON_IDS.SPLASH).addEventListener('click', (e) => {
       const rowIndex = Math.floor(this.ROWS * Math.random())
       const columnIndex = Math.floor(this.ROWS * Math.random())
       this.rippleModel.applyImpression(rowIndex, columnIndex)
-      document.getElementById(BUTTON_IDS.RANDOM).classList.remove('hidden')
+      if(this.walkthroughState == WalkthroughState.Initial) {
+        this.play()
+        setTimeout(() => {
+          this.stop()
+          document.getElementById(BUTTON_IDS.RANDOM).classList.remove('hidden')
+          this.walkthroughState = WalkthroughState.Halfway
+        }, 2000)
+      }
     });
     document.getElementById(BUTTON_IDS.START).addEventListener('click', (e) => {
       this.play()
       document.getElementById(BUTTON_IDS.START).classList.add('hidden')
       document.getElementById(BUTTON_IDS.STOP).classList.remove('hidden');
+      this.walkthroughState = WalkthroughState.Complete
     });
     document.getElementById(BUTTON_IDS.STOP).addEventListener('click', (e) => {
       this.stop()

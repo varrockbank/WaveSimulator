@@ -2,6 +2,7 @@ body {
   margin: 0;
   overflow: hidden;
   background-color: #eee;
+  font-family: Arial, Helvetica, sans-serif	
 }
 
 #controls {
@@ -69,6 +70,7 @@ button.remove {
   color: #666;
   border: 2px solid #666;
   border-radius: 6px;
+  margin-bottom: 16px;
   transition: all .5s ease;
 }
 .btn::-moz-focus-inner {
@@ -142,4 +144,8 @@ button.remove {
 
 .bounce {
   -webkit-animation: bounce 0.75s infinite;
+}
+
+.mobile#controls .alternative {
+  display: none;
 }

@@ -7,6 +7,14 @@ const EVENT_KEYS = {
   RANDOM: 'z',
 };
 
+const BUTTON_IDS = {
+// ElementIDs of Button
+  SPLASH: 'splash',
+  START: 'start',
+  STOP: 'stop',
+  RANDOM: 'random',
+};
+
 export class Engine {
   private readonly width = window.innerWidth
   private readonly height = window.innerHeight
@@ -34,6 +42,8 @@ export class Engine {
   private readonly planeUUID: string
   private readonly geometry: THREE.Geometry
 
+  private interval
+
   constructor (
     private readonly ROWS,
     private readonly COLUMNS,
@@ -44,13 +54,13 @@ export class Engine {
     // Instance Scene.
     this.scene = new THREE.Scene()
     // Instantiate Camera.
-    this.camera = new THREE.PerspectiveCamera(45, this.width / this.height, 1, 1000)
-    this.camera.position.set(0, -70, 50)
+    this.camera = new THREE.PerspectiveCamera(80, this.width / this.height, 1, 500)
+    this.camera.position.set(10, -71, 40)
     // Instantiate render.
     this.renderer = new THREE.WebGLRenderer()
     this.renderer.setClearColor( 0xfff6e6 )
-    this.renderer.setSize(this.width, this.height)
-    document.body.appendChild( this.renderer.domElement)
+    this.renderer.setSize(this.width * 3 / 4 , this.height * 3 / 4)
+    document.getElementById('container').appendChild( this.renderer.domElement)
     // Instantiate controls.
     this.controls = new THREE.OrbitControls( this.camera, this.renderer.domElement )
     // Instantiate raycaster.
@@ -65,12 +75,17 @@ export class Engine {
       // map: texture,
     })
 
+    this.camera.rotation.x = 1.04
+    this.camera.rotation.y = .083
+    this.camera.rotation.z = -.14
+
     const plane = new THREE.Mesh(geometry, material)
-    plane.position.z = 20
+    plane.position.y = -5
+    plane.position.z = 2
     this.planeUUID = plane.uuid;
     this.geometry = plane.geometry as THREE.Geometry;
     this.scene.add(plane)
-  
+
     const axes = new THREE.AxisHelper(100)
     this.scene.add(axes)
 
@@ -152,6 +167,32 @@ export class Engine {
   private addEventListeners() {
     window.addEventListener('mouseup', (e) => { this.handleMouseup(e) } , false );
     window.addEventListener('keyup', (e) => { this.handleKeyUp(e) } , false );
+    document.getElementById(BUTTON_IDS.RANDOM).addEventListener('click', (e) => {
+      this.initRandomHeightmap()
+    });
+    document.getElementById(BUTTON_IDS.SPLASH).addEventListener('click', (e) => {
+      const rowIndex = Math.floor(this.ROWS * Math.random())
+      const columnIndex = Math.floor(this.ROWS * Math.random())
+      this.rippleModel.applyImpression(rowIndex, columnIndex)
+      document.getElementById(BUTTON_IDS.RANDOM).classList.remove('hidden')
+    });
+    document.getElementById(BUTTON_IDS.START).addEventListener('click', (e) => {
+      this.play()
+      document.getElementById(BUTTON_IDS.START).classList.add('hidden')
+      document.getElementById(BUTTON_IDS.STOP).classList.remove('hidden');
+    });
+    document.getElementById(BUTTON_IDS.STOP).addEventListener('click', (e) => {
+      this.stop()
+      document.getElementById(BUTTON_IDS.START).classList.remove('hidden')
+      document.getElementById(BUTTON_IDS.STOP).classList.add('hidden');
+    });
+  }
+
+  private stop() {
+    clearInterval(this.interval)
+  }
+  private play() {
+    this.interval = setInterval(() => { this.iterate() }, 100)
   }
 
   private handleKeyUp({ key }) {
@@ -162,6 +203,7 @@ export class Engine {
         break
       }
       case EVENT_KEYS.RUN: {
+        this.play()
         setInterval(() => { this.iterate() }, 100)
         break
       }
@@ -174,9 +216,10 @@ export class Engine {
   }
 
   private handleMouseup({ clientX , clientY }) {
+    const rect = this.renderer.domElement.getBoundingClientRect()
     const mouse = {
-      x: 2 * ( clientX / this.width ) - 1,
-      y: -2 * ( clientY / this.height ) + 1,
+      x: 2*( (clientX - rect.left) / (rect.right - rect.left)) - 1,
+      y: - ( ( clientY - rect.top ) / ( rect.bottom - rect.top) ) * 2 + 1
     }
     this.raycaster.setFromCamera(mouse, this.camera)
     const planeIntersect =  this.raycaster.intersectObjects( this.scene.children )

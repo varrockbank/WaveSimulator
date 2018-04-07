@@ -125,6 +125,13 @@ var EVENT_KEYS = {
     RUN: 'y',
     RANDOM: 'z'
 };
+var BUTTON_IDS = {
+    // ElementIDs of Button
+    SPLASH: 'splash',
+    START: 'start',
+    STOP: 'stop',
+    RANDOM: 'random'
+};
 
 var Engine = function () {
     function Engine(ROWS, COLUMNS) {
@@ -146,13 +153,13 @@ var Engine = function () {
         // Instance Scene.
         this.scene = new THREE.Scene();
         // Instantiate Camera.
-        this.camera = new THREE.PerspectiveCamera(45, this.width / this.height, 1, 1000);
-        this.camera.position.set(0, -70, 50);
+        this.camera = new THREE.PerspectiveCamera(80, this.width / this.height, 1, 500);
+        this.camera.position.set(10, -71, 40);
         // Instantiate render.
         this.renderer = new THREE.WebGLRenderer();
         this.renderer.setClearColor(0xfff6e6);
-        this.renderer.setSize(this.width, this.height);
-        document.body.appendChild(this.renderer.domElement);
+        this.renderer.setSize(this.width * 3 / 4, this.height * 3 / 4);
+        document.getElementById('container').appendChild(this.renderer.domElement);
         // Instantiate controls.
         this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
         // Instantiate raycaster.
@@ -164,8 +171,12 @@ var Engine = function () {
             flatShading: true,
             shininess: 5
         });
+        this.camera.rotation.x = 1.04;
+        this.camera.rotation.y = .083;
+        this.camera.rotation.z = -.14;
         var plane = new THREE.Mesh(geometry, material);
-        plane.position.z = 20;
+        plane.position.y = -5;
+        plane.position.z = 2;
         this.planeUUID = plane.uuid;
         this.geometry = plane.geometry;
         this.scene.add(plane);
@@ -256,11 +267,44 @@ var Engine = function () {
             window.addEventListener('keyup', function (e) {
                 _this2.handleKeyUp(e);
             }, false);
+            document.getElementById(BUTTON_IDS.RANDOM).addEventListener('click', function (e) {
+                _this2.initRandomHeightmap();
+            });
+            document.getElementById(BUTTON_IDS.SPLASH).addEventListener('click', function (e) {
+                var rowIndex = Math.floor(_this2.ROWS * Math.random());
+                var columnIndex = Math.floor(_this2.ROWS * Math.random());
+                _this2.rippleModel.applyImpression(rowIndex, columnIndex);
+                document.getElementById(BUTTON_IDS.RANDOM).classList.remove('hidden');
+            });
+            document.getElementById(BUTTON_IDS.START).addEventListener('click', function (e) {
+                _this2.play();
+                document.getElementById(BUTTON_IDS.START).classList.add('hidden');
+                document.getElementById(BUTTON_IDS.STOP).classList.remove('hidden');
+            });
+            document.getElementById(BUTTON_IDS.STOP).addEventListener('click', function (e) {
+                _this2.stop();
+                document.getElementById(BUTTON_IDS.START).classList.remove('hidden');
+                document.getElementById(BUTTON_IDS.STOP).classList.add('hidden');
+            });
+        }
+    }, {
+        key: "stop",
+        value: function stop() {
+            clearInterval(this.interval);
+        }
+    }, {
+        key: "play",
+        value: function play() {
+            var _this3 = this;
+
+            this.interval = setInterval(function () {
+                _this3.iterate();
+            }, 100);
         }
     }, {
         key: "handleKeyUp",
         value: function handleKeyUp(_ref) {
-            var _this3 = this;
+            var _this4 = this;
 
             var key = _ref.key;
 
@@ -273,8 +317,9 @@ var Engine = function () {
                     }
                 case EVENT_KEYS.RUN:
                     {
+                        this.play();
                         setInterval(function () {
-                            _this3.iterate();
+                            _this4.iterate();
                         }, 100);
                         break;
                     }
@@ -290,19 +335,20 @@ var Engine = function () {
     }, {
         key: "handleMouseup",
         value: function handleMouseup(_ref2) {
-            var _this4 = this;
+            var _this5 = this;
 
             var clientX = _ref2.clientX,
                 clientY = _ref2.clientY;
 
+            var rect = this.renderer.domElement.getBoundingClientRect();
             var mouse = {
-                x: 2 * (clientX / this.width) - 1,
-                y: -2 * (clientY / this.height) + 1
+                x: 2 * ((clientX - rect.left) / (rect.right - rect.left)) - 1,
+                y: -((clientY - rect.top) / (rect.bottom - rect.top)) * 2 + 1
             };
             this.raycaster.setFromCamera(mouse, this.camera);
             var planeIntersect = this.raycaster.intersectObjects(this.scene.children).find(function (_ref3) {
                 var uuid = _ref3.object.uuid;
-                return uuid === _this4.planeUUID;
+                return uuid === _this5.planeUUID;
             });
             if (planeIntersect) {
                 var _planeIntersect$point = planeIntersect.point,

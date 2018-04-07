@@ -6,7 +6,7 @@ body {
 
 #controls {
   margin: auto;
-  width: 50%;
+  width: 75%;
   padding-bottom: 20px;
   text-align: center;
 }
@@ -16,6 +16,10 @@ body {
 }
 
 button.hidden {
+  visibility: hidden;
+}
+
+button.remove {
   display: none;
 }
 
@@ -54,7 +58,7 @@ button.hidden {
   -moz-user-select: text;
   text-decoration: none;
   text-transform: uppercase;
-  padding: 16px 36px 22px;
+  padding: 16px 10px 22px;
   background-color: #fff;
   color: #666;
   border: 2px solid #666;
@@ -100,6 +104,20 @@ button.hidden {
 }
 .btn--radius {
   border-radius: 36px;
+}
+
+#random {
+  background-color: #0AD3FF;
+}
+#start {
+  background-color: #78FFD6;
+}
+#stop {
+  background-color: #C3979F;
+  color: white;
+}
+#splash {
+  background-color: #E1FAF9
 }
 
 @-webkit-keyframes bounce {

@@ -132,6 +132,12 @@ var BUTTON_IDS = {
     STOP: 'stop',
     RANDOM: 'random'
 };
+var WalkthroughState;
+(function (WalkthroughState) {
+    WalkthroughState[WalkthroughState["Initial"] = 0] = "Initial";
+    WalkthroughState[WalkthroughState["Halfway"] = 1] = "Halfway";
+    WalkthroughState[WalkthroughState["Complete"] = 2] = "Complete";
+})(WalkthroughState || (WalkthroughState = {}));
 
 var Engine = function () {
     function Engine(ROWS, COLUMNS) {
@@ -148,7 +154,7 @@ var Engine = function () {
         this.PLANE_HEIGHT = 100;
         this.CELL_HEIGHT = this.PLANE_HEIGHT / this.ROWS;
         this.CELL_WIDTH = this.PLANE_WIDTH / this.COLUMNS;
-        this.walkthroughState = 'initial';
+        this.walkthroughState = WalkthroughState.Initial;
         console.assert(this.ROWS > 0);
         console.assert(this.COLUMNS > 0);
         // Instance Scene.
@@ -187,7 +193,6 @@ var Engine = function () {
         this.addEventListeners();
         this.propagationSpringModel = new propagation_spring_model_1.PropagationSpringModel(this.ROWS + 1, this.COLUMNS + 1);
         this.heightMap = new Array(this.ROW_VERTICES * this.COLUMN_VERTICES).fill(0);
-        // this.initRandomHeightmap()
         this.rippleModel = new ripple_model_1.RippleModel(this.ROWS + 1, this.COLUMNS + 1);
         this.renderer.gammaInput = true;
         this.renderer.gammaOutput = true;
@@ -270,20 +275,32 @@ var Engine = function () {
             }, false);
             document.getElementById(BUTTON_IDS.RANDOM).addEventListener('click', function (e) {
                 _this2.initRandomHeightmap();
-                if (_this2.walkthroughState == 'initialRandomHeight') {
-                    document.getElementById(BUTTON_IDS.START).classList.remove('hidden');
+                if (_this2.walkthroughState == WalkthroughState.Halfway) {
+                    var interval = setInterval(function () {
+                        _this2.initRandomHeightmap();
+                    }, 200);
+                    setTimeout(function () {
+                        clearInterval(interval);
+                    }, 2000);
+                    document.getElementById(BUTTON_IDS.RANDOM).classList.remove('bounce');
+                    setTimeout(function () {
+                        document.getElementById(BUTTON_IDS.START).classList.remove('hidden');
+                        document.getElementById(BUTTON_IDS.START).classList.add('bounce');
+                    }, 1000);
                 }
             });
             document.getElementById(BUTTON_IDS.SPLASH).addEventListener('click', function (e) {
                 var rowIndex = Math.floor(_this2.ROWS * Math.random());
                 var columnIndex = Math.floor(_this2.ROWS * Math.random());
                 _this2.rippleModel.applyImpression(rowIndex, columnIndex);
-                if (_this2.walkthroughState == 'initial') {
+                if (_this2.walkthroughState == WalkthroughState.Initial) {
                     _this2.play();
+                    document.getElementById(BUTTON_IDS.SPLASH).classList.remove('bounce');
                     setTimeout(function () {
                         _this2.stop();
                         document.getElementById(BUTTON_IDS.RANDOM).classList.remove('hidden');
-                        _this2.walkthroughState = 'initialRandomHeight';
+                        document.getElementById(BUTTON_IDS.RANDOM).classList.add('bounce');
+                        _this2.walkthroughState = WalkthroughState.Halfway;
                     }, 2000);
                 }
             });
@@ -291,7 +308,7 @@ var Engine = function () {
                 _this2.play();
                 document.getElementById(BUTTON_IDS.START).classList.add('hidden');
                 document.getElementById(BUTTON_IDS.STOP).classList.remove('hidden');
-                _this2.walkthroughState = 'complete';
+                _this2.walkthroughState = WalkthroughState.Complete;
             });
             document.getElementById(BUTTON_IDS.STOP).addEventListener('click', function (e) {
                 _this2.stop();

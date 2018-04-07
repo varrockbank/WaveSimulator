@@ -177,7 +177,17 @@ export class Engine {
     document.getElementById(BUTTON_IDS.RANDOM).addEventListener('click', (e) => {
       this.initRandomHeightmap()
       if(this.walkthroughState ==  WalkthroughState.Halfway) {
-        document.getElementById(BUTTON_IDS.START).classList.remove('hidden')
+        const interval = setInterval(() => {
+          this.initRandomHeightmap()
+        }, 200)
+        setTimeout(() => {
+          clearInterval(interval)
+        }, 2000)
+        document.getElementById(BUTTON_IDS.RANDOM).classList.remove('bounce')
+        setTimeout(() => {
+          document.getElementById(BUTTON_IDS.START).classList.remove('hidden')
+          document.getElementById(BUTTON_IDS.START).classList.add('bounce')
+        }, 1000)
       }
     });
     document.getElementById(BUTTON_IDS.SPLASH).addEventListener('click', (e) => {
@@ -186,9 +196,11 @@ export class Engine {
       this.rippleModel.applyImpression(rowIndex, columnIndex)
       if(this.walkthroughState == WalkthroughState.Initial) {
         this.play()
+        document.getElementById(BUTTON_IDS.SPLASH).classList.remove('bounce')
         setTimeout(() => {
           this.stop()
           document.getElementById(BUTTON_IDS.RANDOM).classList.remove('hidden')
+          document.getElementById(BUTTON_IDS.RANDOM).classList.add('bounce')
           this.walkthroughState = WalkthroughState.Halfway
         }, 2000)
       }

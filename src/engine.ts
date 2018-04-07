@@ -19,6 +19,7 @@ const BUTTON_IDS = {
 enum WalkthroughState {
   Initial,
   Halfway,
+  HighlightStop,
   Complete
 }
 
@@ -218,12 +219,23 @@ export class Engine {
       this.play()
       document.getElementById(BUTTON_IDS.START).classList.add('hidden')
       document.getElementById(BUTTON_IDS.STOP).classList.remove('hidden');
-      this.walkthroughState = WalkthroughState.Complete
+      if(this.walkthroughState == WalkthroughState.Halfway) {
+        this.walkthroughState = WalkthroughState.HighlightStop
+        document.getElementById(BUTTON_IDS.START).classList.remove('bounce')
+        document.getElementById(BUTTON_IDS.STOP).classList.add('bounce')
+        setTimeout(() => {
+          document.getElementById(BUTTON_IDS.STOP).classList.remove('bounce')
+        }, 5000)
+      }
     });
     document.getElementById(BUTTON_IDS.STOP).addEventListener('click', (e) => {
       this.stop()
       document.getElementById(BUTTON_IDS.START).classList.remove('hidden')
       document.getElementById(BUTTON_IDS.STOP).classList.add('hidden');
+      if(this.walkthroughState == WalkthroughState.HighlightStop) {
+        document.getElementById(BUTTON_IDS.STOP).classList.remove('bounce')
+        this.walkthroughState = WalkthroughState.Complete
+      }
     });
   }
 

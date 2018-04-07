@@ -143,7 +143,8 @@ var WalkthroughState;
 (function (WalkthroughState) {
     WalkthroughState[WalkthroughState["Initial"] = 0] = "Initial";
     WalkthroughState[WalkthroughState["Halfway"] = 1] = "Halfway";
-    WalkthroughState[WalkthroughState["Complete"] = 2] = "Complete";
+    WalkthroughState[WalkthroughState["HighlightStop"] = 2] = "HighlightStop";
+    WalkthroughState[WalkthroughState["Complete"] = 3] = "Complete";
 })(WalkthroughState || (WalkthroughState = {}));
 
 var Engine = function () {
@@ -321,12 +322,23 @@ var Engine = function () {
                 _this2.play();
                 document.getElementById(BUTTON_IDS.START).classList.add('hidden');
                 document.getElementById(BUTTON_IDS.STOP).classList.remove('hidden');
-                _this2.walkthroughState = WalkthroughState.Complete;
+                if (_this2.walkthroughState == WalkthroughState.Halfway) {
+                    _this2.walkthroughState = WalkthroughState.HighlightStop;
+                    document.getElementById(BUTTON_IDS.START).classList.remove('bounce');
+                    document.getElementById(BUTTON_IDS.STOP).classList.add('bounce');
+                    setTimeout(function () {
+                        document.getElementById(BUTTON_IDS.STOP).classList.remove('bounce');
+                    }, 5000);
+                }
             });
             document.getElementById(BUTTON_IDS.STOP).addEventListener('click', function (e) {
                 _this2.stop();
                 document.getElementById(BUTTON_IDS.START).classList.remove('hidden');
                 document.getElementById(BUTTON_IDS.STOP).classList.add('hidden');
+                if (_this2.walkthroughState == WalkthroughState.HighlightStop) {
+                    document.getElementById(BUTTON_IDS.STOP).classList.remove('bounce');
+                    _this2.walkthroughState = WalkthroughState.Complete;
+                }
             });
         }
     }, {

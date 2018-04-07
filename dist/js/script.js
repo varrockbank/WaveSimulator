@@ -76,18 +76,24 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * @return function for indexing into 1-d buffer representing ( m x n ) matrix
  */
 function getSingleBufferRowMajorMatrixIndexer(m) {
-  return function (i, j) {
-    return i * m + j;
-  };
+    return function (i, j) {
+        return i * m + j;
+    };
 }
 exports.getSingleBufferRowMajorMatrixIndexer = getSingleBufferRowMajorMatrixIndexer;
 /**
  * @return Random number in [-1, 0, 1]
  */
 function getRandomDirection() {
-  return Math.floor(3 * Math.random()) - 1;
+    return Math.floor(3 * Math.random()) - 1;
 }
 exports.getRandomDirection = getRandomDirection;
+function isMobile() {
+    return (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+    );
+}
+exports.isMobile = isMobile;
+;
 
 /***/ }),
 /* 1 */
@@ -120,6 +126,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 Object.defineProperty(exports, "__esModule", { value: true });
 var ripple_model_1 = __webpack_require__(3);
 var propagation_spring_model_1 = __webpack_require__(4);
+var utilities_1 = __webpack_require__(0);
 var EVENT_KEYS = {
     ITERATE: 'x',
     RUN: 'y',
@@ -155,6 +162,7 @@ var Engine = function () {
         this.CELL_HEIGHT = this.PLANE_HEIGHT / this.ROWS;
         this.CELL_WIDTH = this.PLANE_WIDTH / this.COLUMNS;
         this.walkthroughState = WalkthroughState.Initial;
+        this.isMobile = utilities_1.isMobile();
         console.assert(this.ROWS > 0);
         console.assert(this.COLUMNS > 0);
         // Instance Scene.
@@ -165,7 +173,12 @@ var Engine = function () {
         // Instantiate render.
         this.renderer = new THREE.WebGLRenderer();
         this.renderer.setClearColor(0xfff6e6);
-        this.renderer.setSize(this.width * 3 / 4, this.height * 3 / 4);
+        if (this.isMobile) {
+            this.renderer.setSize(this.width, this.height * 3 / 4);
+            document.getElementById('controls').classList.add('mobile');
+        } else {
+            this.renderer.setSize(this.width * 3 / 4, this.height * 3 / 4);
+        }
         document.getElementById('container').appendChild(this.renderer.domElement);
         // Instantiate controls.
         this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);

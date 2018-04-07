@@ -1,5 +1,6 @@
 import { RippleModel } from "./ripple_model"
 import { PropagationSpringModel } from "./propagation_spring_model"
+import { isMobile } from "./utilities";
 
 const EVENT_KEYS = {
   ITERATE: 'x',
@@ -52,6 +53,7 @@ export class Engine {
 
   private walkthroughState: WalkthroughState = WalkthroughState.Initial
 
+  private readonly isMobile = isMobile()
   constructor (
     private readonly ROWS,
     private readonly COLUMNS,
@@ -67,7 +69,14 @@ export class Engine {
     // Instantiate render.
     this.renderer = new THREE.WebGLRenderer()
     this.renderer.setClearColor( 0xfff6e6 )
-    this.renderer.setSize(this.width * 3 / 4 , this.height * 3 / 4)
+
+    if(this.isMobile) {
+      this.renderer.setSize(this.width , this.height * 3 / 4)
+      document.getElementById('controls').classList.add('mobile')
+    } else {
+      this.renderer.setSize(this.width * 3 / 4 , this.height * 3 / 4)
+    }
+
     document.getElementById('container').appendChild( this.renderer.domElement)
     // Instantiate controls.
     this.controls = new THREE.OrbitControls( this.camera, this.renderer.domElement )
@@ -265,4 +274,9 @@ export class Engine {
       this.iterate()
     }
   }
+
+
+
+
 }
+

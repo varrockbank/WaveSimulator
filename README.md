@@ -1,9 +1,15 @@
+
+# Preview
+![preview](https://raw.githubusercontent.com/varrockbank/WaveSimulator/master/preview.gif)
+
+### [Live Demo](https://varrockbank.github.io/WaveSimulator/dist/index.html)
+
 # Commentary
 This project is intended to demonstrate my abilities spanning:
 
+- Numerical computation 
 - ES6 JavaScript
 - TypeScript and, more generally, type-safe languages
-- Numerical computation and not-too advanced mathematics
 - DOM, events and miscellaneous aspects of the browser platform
 - Programming style and code quality
 - Writing clean and maintainable code, albeit the subject (wave simulation) is non-trivial
@@ -18,11 +24,6 @@ This project is intended to demonstrate my abilities spanning:
   - Use 1-d buffer to represent 2-d matrix
   - Special-case looping styles
   - Avoiding premature optimizations, programming against higher abstractions first
-
-# Preview
-![preview](https://raw.githubusercontent.com/varrockbank/WaveSimulator/master/preview.gif)
-
-[Demo](https://varrockbank.github.io/WaveSimulator/dist/index.html)
 
 # Stack
 - three.js 88dev
@@ -44,7 +45,9 @@ npm run build
 npm run build
 ```
 
-## Watch
+## Commands
 ```
+npm install # or yarn
+npm run build
 npm run watch
 ```
